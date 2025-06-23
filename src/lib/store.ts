@@ -45,7 +45,7 @@ export interface Score {
 }
 
 export interface Comment {
-  id: string;
+  id:string;
   candidateId: string;
   evaluatorId: string;
   commentText: string;
@@ -54,6 +54,7 @@ export interface Comment {
 // --- Store State and Actions ---
 interface StoreState {
   loading: boolean;
+  permissionError: boolean;
   evaluators: Evaluator[];
   candidates: Candidate[];
   items: EvaluationItem[];
@@ -82,7 +83,7 @@ interface StoreActions {
 type StoreContextType = StoreState & StoreActions;
 
 // --- Initial Data for Seeding ---
-const createInitialState = (): Omit<StoreState, 'loading' | 'superPassword'> => ({
+const createInitialState = (): Omit<StoreState, 'loading' | 'superPassword' | 'permissionError'> => ({
   evaluators: [
     { id: 'eval1', name: '김평가', password: '1' },
     { id: 'eval2', name: '이평가', password: '1' },
@@ -111,6 +112,7 @@ const StoreContext = createContext<StoreContextType | undefined>(undefined);
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<StoreState>({
     loading: true,
+    permissionError: false,
     evaluators: [],
     candidates: [],
     items: [],
@@ -149,26 +151,41 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return snapshot.docs.map((doc: DocumentData) => ({ id: doc.id, ...doc.data() } as T));
     };
 
+    const handleError = (error: Error & { code?: string }) => {
+      if (error.code === 'permission-denied') {
+        console.error("Firestore Permission Denied. Please check your security rules in the Firebase Console.");
+        setState(prev => ({ ...prev, permissionError: true, loading: false }));
+      } else {
+        console.error("Firestore snapshot error:", error);
+        setState(prev => ({ ...prev, loading: false }));
+      }
+    };
+
     const unsubscribers = [
-      onSnapshot(collection(db, 'evaluators'), (snapshot) => setState(prev => ({ ...prev, evaluators: mapSnapshot<Evaluator>(snapshot) }))),
-      onSnapshot(collection(db, 'candidates'), (snapshot) => setState(prev => ({ ...prev, candidates: mapSnapshot<Candidate>(snapshot) }))),
-      onSnapshot(collection(db, 'items'), (snapshot) => setState(prev => ({ ...prev, items: mapSnapshot<EvaluationItem>(snapshot) }))),
-      onSnapshot(collection(db, 'scores'), (snapshot) => setState(prev => ({ ...prev, scores: mapSnapshot<Score>(snapshot) }))),
-      onSnapshot(collection(db, 'comments'), (snapshot) => setState(prev => ({ ...prev, comments: mapSnapshot<Comment>(snapshot) }))),
+      onSnapshot(collection(db, 'evaluators'), (snapshot) => setState(prev => ({ ...prev, evaluators: mapSnapshot<Evaluator>(snapshot), permissionError: false })), handleError),
+      onSnapshot(collection(db, 'candidates'), (snapshot) => setState(prev => ({ ...prev, candidates: mapSnapshot<Candidate>(snapshot), permissionError: false })), handleError),
+      onSnapshot(collection(db, 'items'), (snapshot) => setState(prev => ({ ...prev, items: mapSnapshot<EvaluationItem>(snapshot), permissionError: false })), handleError),
+      onSnapshot(collection(db, 'scores'), (snapshot) => setState(prev => ({ ...prev, scores: mapSnapshot<Score>(snapshot), permissionError: false })), handleError),
+      onSnapshot(collection(db, 'comments'), (snapshot) => setState(prev => ({ ...prev, comments: mapSnapshot<Comment>(snapshot), permissionError: false })), handleError),
       onSnapshot(doc(db, 'settings', 'admin'), (doc) => {
         if (doc.exists()) {
-          setState(prev => ({...prev, adminPassword: doc.data().password}));
+          setState(prev => ({...prev, adminPassword: doc.data().password, permissionError: false}));
         }
-      }),
+      }, handleError),
     ];
 
     const checkAndSeedData = async () => {
-      const evaluatorsSnap = await getDocs(query(collection(db, 'evaluators'), limit(1)));
-      if (evaluatorsSnap.empty) {
-        console.log("No data found in Firestore. Seeding initial data...");
-        await resetStore();
-      } else {
-        setState(prev => ({ ...prev, loading: false }));
+      try {
+        const evaluatorsQuery = query(collection(db, 'evaluators'), limit(1));
+        const evaluatorsSnap = await getDocs(evaluatorsQuery);
+        if (evaluatorsSnap.empty) {
+          console.log("No data found in Firestore. Seeding initial data...");
+          await resetStore();
+        } else {
+          setState(prev => ({ ...prev, loading: false, permissionError: false }));
+        }
+      } catch (error: any) {
+        handleError(error);
       }
     };
     
