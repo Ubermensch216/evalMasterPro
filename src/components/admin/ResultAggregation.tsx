@@ -13,7 +13,7 @@ import { PrintableView } from "./PrintableView";
 import { cn } from "@/lib/utils";
 
 export default function ResultAggregation() {
-  const { evaluators, candidates, items, scores, comments } = useStore();
+  const { systemName, evaluators, candidates, items, scores, comments } = useStore();
   const [selectedEvaluatorId, setSelectedEvaluatorId] = useState<string | null>(null);
   const printComponentRef = useRef<HTMLDivElement>(null);
 
@@ -23,7 +23,7 @@ export default function ResultAggregation() {
     const printContent = printComponentRef.current;
     if (!printContent || !selectedEvaluator) return;
 
-    const printWindow = window.open('', '', 'height=800,width=1000');
+    const printWindow = window.open('', '', 'height=800,width=1200');
     if (!printWindow) {
       alert('팝업 창이 차단되었습니다. 팝업을 허용하고 다시 시도해 주세요.');
       return;
@@ -38,16 +38,23 @@ export default function ResultAggregation() {
 
     printWindow.document.write(`
         <style>
-          /* These styles are added to help the print layout */
+          /* Define theme variables for print */
+          :root {
+            --background: 0 0% 100%;
+            --foreground: 0 0% 3.9%;
+            --primary: 231 48% 48%;
+            --muted: 0 0% 96.1%;
+          }
+
+          /* Basic print setup */
           @media print {
             @page {
-              size: A4;
+              size: A4 landscape; /* Use landscape for wider tables */
               margin: 1.5cm;
             }
 
             html, body {
-              width: 100%;
-              height: auto;
+              font-family: 'PT Sans', sans-serif;
               font-size: 10pt;
               background: white !important;
               color: black !important;
@@ -55,39 +62,55 @@ export default function ResultAggregation() {
               print-color-adjust: exact;
             }
 
-            .no-print {
-              display: none !important;
-            }
+            .no-print { display: none !important; }
+            tr, footer { page-break-inside: avoid !important; }
+            table { width: 100% !important; border-collapse: collapse !important; }
+            thead { display: table-header-group !important; }
+          }
+          
+          /* Report-specific styles */
+          .report-header {
+             border-bottom: 2px solid #333 !important;
+             padding-bottom: 1rem !important;
+             margin-bottom: 2rem !important;
+          }
+          .report-title {
+              color: hsl(var(--primary)) !important;
+              font-size: 24pt !important;
+          }
+          .report-info {
+              padding-bottom: 1rem !important;
+              border-bottom: 1px solid #ccc !important;
+          }
+          .report-table thead {
+             background-color: hsl(var(--muted)) !important;
+             color: hsl(var(--foreground)) !important;
+          }
+          .report-table th, .report-table td {
+             border: 1px solid #ddd !important;
+             padding: 0.75rem !important;
+             vertical-align: middle !important;
+             text-align: center;
+          }
+          .report-table th:first-child, .report-table td:first-child,
+          .report-table th:last-child, .report-table td:last-child {
+              text-align: left;
+          }
+          .report-table tbody tr:nth-child(even) {
+            background-color: hsl(var(--muted)) !important;
+          }
+          .report-table .font-bold {
+              font-weight: 700 !important;
+          }
+           /* Total Score column */
+          .report-table td:nth-child(${items.length + 2}) {
+            background-color: hsla(var(--primary), 0.1) !important;
+          }
 
-            /* Ensure the table fits the width of the page */
-            table {
-              width: 100% !important;
-              table-layout: auto !important;
-              border-collapse: collapse !important;
-            }
-
-            /* Repeat the table header on each page */
-            thead {
-              display: table-header-group !important;
-            }
-
-            /* Add borders and adjust padding for readability */
-            th, td {
-              border: 1px solid #ccc !important;
-              padding: 6px !important;
-              word-break: break-word;
-            }
-
-            /* Prevent rows and the footer from being split across pages */
-            tr, footer {
-              page-break-inside: avoid !important;
-            }
-
-            /* Adjust typography for print */
-            h1 { font-size: 18pt !important; }
-            .text-xl { font-size: 12pt !important; }
-            .text-lg { font-size: 11pt !important; }
-            p, span, div { font-size: 10pt !important; }
+          .report-footer {
+            padding-top: 2rem !important;
+            margin-top: 4rem !important;
+            border-top: 2px solid #333 !important;
           }
         </style>
       `);
@@ -157,6 +180,7 @@ export default function ResultAggregation() {
                             items={items}
                             scores={scores}
                             comments={comments}
+                            systemName={systemName}
                         />
                     </DialogContent>
                 )}
