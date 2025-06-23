@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -11,7 +12,7 @@ export default function AdminPage() {
   const { adminPassword, superPassword, loading } = useStore();
 
   const handleLogin = (password: string) => {
-    if (password === adminPassword || password === superPassword) {
+    if (password === superPassword || (adminPassword && password === adminPassword)) {
       setIsAuthenticated(true);
       return true;
     }

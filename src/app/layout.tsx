@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/common/PageHeader";
 import PermissionErrorDisplay from "@/components/common/PermissionErrorDisplay";
 
 export const metadata: Metadata = {
-  title: "이발마스터 프로 | EvalMaster Pro",
+  title: "이발마스터 프로(EvalMaster Pro)",
   description: "채점 및 집계 시스템",
 };
 

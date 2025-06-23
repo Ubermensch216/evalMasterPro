@@ -1,29 +1,59 @@
+
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { RotateCw, KeyRound, Loader2 } from "lucide-react";
+import { RotateCw, KeyRound, Loader2, Save, Eraser } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function SettingsPanel() {
-  const { setAdminPassword, resetStore } = useStore();
+  const { systemName, setSystemName, setAdminPassword, resetAdminPassword, resetStore } = useStore();
+  
+  const [systemNameInput, setSystemNameInput] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
-  const [isReseting, setIsReseting] = useState(false);
+
+  const [isSavingName, setIsSavingName] = useState(false);
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
+  const [isResetingPassword, setIsResetingPassword] = useState(false);
+  const [isResetingSystem, setIsResetingSystem] = useState(false);
+
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (systemName) {
+      setSystemNameInput(systemName);
+    }
+  }, [systemName]);
+
+  const handleSaveSystemName = async () => {
+    if (!systemNameInput) {
+      toast({ title: "오류", description: "시스템 이름을 입력해주세요.", variant: "destructive" });
+      return;
+    }
+    setIsSavingName(true);
+    try {
+      await setSystemName(systemNameInput);
+      toast({ title: "성공", description: "시스템 이름이 변경되었습니다." });
+    } catch (error) {
+      console.error("Failed to save system name:", error);
+      toast({ title: "오류", description: "시스템 이름 변경에 실패했습니다.", variant: "destructive" });
+    } finally {
+      setIsSavingName(false);
+    }
+  };
 
   const handleChangePassword = async () => {
     if (!newPassword || newPassword !== confirmPassword) {
       toast({ title: "오류", description: "새 비밀번호가 일치하지 않습니다.", variant: "destructive" });
       return;
     }
-    setIsSaving(true);
+    setIsSavingPassword(true);
     try {
       await setAdminPassword(newPassword);
       setNewPassword("");
@@ -33,12 +63,25 @@ export default function SettingsPanel() {
       console.error("Failed to change password:", error);
       toast({ title: "오류", description: "비밀번호 변경에 실패했습니다.", variant: "destructive" });
     } finally {
-      setIsSaving(false);
+      setIsSavingPassword(false);
+    }
+  };
+  
+  const handleResetPassword = async () => {
+    setIsResetingPassword(true);
+    try {
+      await resetAdminPassword();
+      toast({ title: "성공", description: "관리자 비밀번호가 초기화되었습니다. 이제 절대 비밀번호로만 로그인할 수 있습니다." });
+    } catch (error) {
+      console.error("Failed to reset password:", error);
+      toast({ title: "오류", description: "비밀번호 초기화에 실패했습니다.", variant: "destructive" });
+    } finally {
+      setIsResetingPassword(false);
     }
   };
 
-  const handleReset = async () => {
-    setIsReseting(true);
+  const handleResetSystem = async () => {
+    setIsResetingSystem(true);
     try {
       await resetStore();
       toast({ title: "시스템 초기화", description: "모든 데이터가 초기화되고 기본값으로 복원되었습니다." });
@@ -46,12 +89,31 @@ export default function SettingsPanel() {
       console.error("Failed to reset store:", error);
       toast({ title: "오류", description: "초기화에 실패했습니다.", variant: "destructive" });
     } finally {
-      setIsReseting(false);
+      setIsResetingSystem(false);
     }
   };
 
   return (
     <div className="grid gap-6 md:grid-cols-2">
+       <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center"><Save className="mr-2 h-5 w-5" />시스템 이름 설정</CardTitle>
+          <CardDescription>앱 전체에 표시될 시스템의 이름을 설정합니다.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <Label htmlFor="system-name">시스템 이름</Label>
+            <Input id="system-name" value={systemNameInput} onChange={(e) => setSystemNameInput(e.target.value)} />
+          </div>
+        </CardContent>
+        <CardFooter>
+          <Button onClick={handleSaveSystemName} disabled={isSavingName}>
+            {isSavingName && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isSavingName ? "저장 중..." : "이름 저장"}
+          </Button>
+        </CardFooter>
+      </Card>
+      
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center"><KeyRound className="mr-2 h-5 w-5" />관리자 비밀번호 변경</CardTitle>
@@ -68,11 +130,40 @@ export default function SettingsPanel() {
           </div>
         </CardContent>
         <CardFooter>
-          <Button onClick={handleChangePassword} disabled={isSaving}>
-            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isSaving ? "변경 중..." : "비밀번호 변경"}
+          <Button onClick={handleChangePassword} disabled={isSavingPassword}>
+            {isSavingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isSavingPassword ? "변경 중..." : "비밀번호 변경"}
           </Button>
         </CardFooter>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center"><Eraser className="mr-2 h-5 w-5" />관리자 비밀번호 초기화</CardTitle>
+          <CardDescription>일반 관리자 비밀번호를 삭제합니다. 초기화 후에는 절대 비밀번호로만 로그인할 수 있습니다.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="secondary" className="w-full">관리자 비밀번호 초기화</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>정말 관리자 비밀번호를 초기화하시겠습니까?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  이 작업은 되돌릴 수 없습니다. 일반 관리자 비밀번호가 영구적으로 삭제되며, 이후에는 절대 비밀번호로만 관리자 페이지에 접근할 수 있습니다.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={isResetingPassword}>취소</AlertDialogCancel>
+                <AlertDialogAction onClick={handleResetPassword} disabled={isResetingPassword}>
+                   {isResetingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                   {isResetingPassword ? "초기화 중..." : "초기화 진행"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </CardContent>
       </Card>
 
       <Card className="border-destructive">
@@ -93,10 +184,10 @@ export default function SettingsPanel() {
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>취소</AlertDialogCancel>
-                <AlertDialogAction onClick={handleReset} className="bg-destructive hover:bg-destructive/90" disabled={isReseting}>
-                   {isReseting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                   {isReseting ? "초기화 중..." : "초기화 진행"}
+                <AlertDialogCancel disabled={isResetingSystem}>취소</AlertDialogCancel>
+                <AlertDialogAction onClick={handleResetSystem} className="bg-destructive hover:bg-destructive/90" disabled={isResetingSystem}>
+                   {isResetingSystem && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                   {isResetingSystem ? "초기화 중..." : "초기화 진행"}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

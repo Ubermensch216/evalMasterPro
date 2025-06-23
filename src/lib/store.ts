@@ -56,6 +56,7 @@ export interface Comment {
 interface StoreState {
   loading: boolean;
   permissionError: boolean;
+  systemName: string;
   evaluators: Evaluator[];
   candidates: Candidate[];
   items: EvaluationItem[];
@@ -78,6 +79,8 @@ interface StoreActions {
   addScore: (candidateId: string, evaluatorId: string, evaluationItemId: string, score: number) => Promise<void>;
   addComment: (candidateId: string, evaluatorId: string, commentText: string) => Promise<void>;
   setAdminPassword: (password: string) => Promise<void>;
+  resetAdminPassword: () => Promise<void>;
+  setSystemName: (name: string) => Promise<void>;
   resetStore: () => Promise<void>;
 }
 
@@ -104,6 +107,7 @@ const createInitialState = (): Omit<StoreState, 'loading' | 'superPassword' | 'p
   scores: [],
   comments: [],
   adminPassword: '1',
+  systemName: '이발마스터 프로(EvalMaster Pro)',
 });
 
 
@@ -114,6 +118,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<StoreState>({
     loading: true,
     permissionError: false,
+    systemName: '',
     evaluators: [],
     candidates: [],
     items: [],
@@ -142,7 +147,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     initialData.items.forEach(i => seedBatch.set(doc(db, 'items', i.id), { name: i.name, maxScore: i.maxScore }));
     await seedBatch.commit();
     
-    await setDoc(doc(db, 'settings', 'admin'), { password: initialData.adminPassword });
+    await setDoc(doc(db, 'settings', 'admin'), { password: initialData.adminPassword, systemName: initialData.systemName });
     
     setState(prev => ({...prev, loading: false}));
   }, []);
@@ -169,21 +174,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       onSnapshot(collection(db, 'comments'), (snapshot) => setState(prev => ({ ...prev, comments: mapSnapshot<Comment>(snapshot), permissionError: false })), handleError),
       onSnapshot(doc(db, 'settings', 'admin'), (doc) => {
         if (doc.exists()) {
-          setState(prev => ({...prev, adminPassword: doc.data().password, permissionError: false}));
+          const data = doc.data();
+          setState(prev => ({
+            ...prev, 
+            adminPassword: data.password,
+            systemName: data.systemName || '이발마스터 프로(EvalMaster Pro)',
+            permissionError: false
+          }));
         }
       }, handleError),
     ];
 
     const checkAndSeedData = async () => {
       try {
-        const evaluatorsQuery = query(collection(db, 'evaluators'), limit(1));
-        const evaluatorsSnap = await getDocs(evaluatorsQuery);
-        if (evaluatorsSnap.empty) {
-          console.log("No data found in Firestore. Seeding initial data...");
-          await resetStore();
+        const settingsDoc = await getDoc(doc(db, 'settings', 'admin'));
+        if (!settingsDoc.exists()) {
+           console.log("No data found in Firestore. Seeding initial data...");
+           await resetStore();
         } else {
-          setState(prev => ({ ...prev, loading: false, permissionError: false }));
+           setState(prev => ({ ...prev, loading: false, permissionError: false }));
         }
+
       } catch (error: any) {
         handleError(error);
       }
@@ -206,7 +217,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const deleteItem = useCallback(async (id: string) => { await deleteDoc(doc(db, 'items', id)); }, []);
   const addScore = useCallback(async (candidateId: string, evaluatorId: string, evaluationItemId: string, score: number) => { await addDoc(collection(db, 'scores'), { candidateId, evaluatorId, evaluationItemId, score }); }, []);
   const addComment = useCallback(async (candidateId: string, evaluatorId: string, commentText: string) => { await addDoc(collection(db, 'comments'), { candidateId, evaluatorId, commentText }); }, []);
-  const setAdminPassword = useCallback(async (password: string) => { await setDoc(doc(db, 'settings', 'admin'), { password }); }, []);
+  const setAdminPassword = useCallback(async (password: string) => { await updateDoc(doc(db, 'settings', 'admin'), { password }); }, []);
+  const resetAdminPassword = useCallback(async () => { await updateDoc(doc(db, 'settings', 'admin'), { password: "" }); }, []);
+  const setSystemName = useCallback(async (name: string) => { await updateDoc(doc(db, 'settings', 'admin'), { systemName: name }); }, []);
+
 
   const value = useMemo(() => ({
     ...state,
@@ -222,8 +236,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     addScore,
     addComment,
     setAdminPassword,
+    resetAdminPassword,
+    setSystemName,
     resetStore
-  }), [state, addEvaluator, updateEvaluator, deleteEvaluator, addCandidate, updateCandidate, deleteCandidate, addItem, updateItem, deleteItem, addScore, addComment, setAdminPassword, resetStore]);
+  }), [state, addEvaluator, updateEvaluator, deleteEvaluator, addCandidate, updateCandidate, deleteCandidate, addItem, updateItem, deleteItem, addScore, addComment, setAdminPassword, resetAdminPassword, setSystemName, resetStore]);
 
   return React.createElement(StoreContext.Provider, { value }, children);
 }
