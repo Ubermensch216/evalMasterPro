@@ -1,16 +1,18 @@
 "use client";
 
 import React from "react";
-import { useStore, type Evaluator } from "@/lib/store";
+import { type Evaluator, type Candidate, type EvaluationItem, type Score, type Comment } from "@/lib/store";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface PrintableViewProps {
   evaluator: Evaluator;
+  candidates: Candidate[];
+  items: EvaluationItem[];
+  scores: Score[];
+  comments: Comment[];
 }
 
-export const PrintableView = React.forwardRef<HTMLDivElement, PrintableViewProps>(({ evaluator }, ref) => {
-  const { candidates, items, scores, comments } = useStore();
-
+export const PrintableView = React.forwardRef<HTMLDivElement, PrintableViewProps>(({ evaluator, candidates, items, scores, comments }, ref) => {
   const evaluatorScores = scores.filter(s => s.evaluatorId === evaluator.id);
   const evaluatorComments = comments.filter(c => c.evaluatorId === evaluator.id);
 

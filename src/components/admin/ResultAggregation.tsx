@@ -1,6 +1,6 @@
 "use client";
 
-import { useStore, type Evaluator } from "@/lib/store";
+import { useStore } from "@/lib/store";
 import ResultsTable from "@/components/results/ResultsTable";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { useReactToPrint } from "react-to-print";
 import { cn } from "@/lib/utils";
 
 export default function ResultAggregation() {
-  const { evaluators } = useStore();
+  const { evaluators, candidates, items, scores, comments } = useStore();
   const [selectedEvaluatorId, setSelectedEvaluatorId] = useState<string | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -70,7 +70,14 @@ export default function ResultAggregation() {
                             </button>
                         </DialogHeader>
                         <div className="pt-4">
-                           <PrintableView ref={printRef} evaluator={selectedEvaluator} />
+                           <PrintableView
+                             ref={printRef}
+                             evaluator={selectedEvaluator}
+                             candidates={candidates}
+                             items={items}
+                             scores={scores}
+                             comments={comments}
+                           />
                         </div>
                     </DialogContent>
                 )}
