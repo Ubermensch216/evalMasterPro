@@ -10,14 +10,7 @@ export function Logo(props: React.SVGProps<SVGSVGElement>) {
     >
       <rect width="32" height="32" rx="8" fill="hsl(var(--primary))" />
       <path
-        d="M9 23V9H18.5C20.9853 9 23 11.0147 23 13.5C23 15.9853 20.9853 18 18.5 18H14"
-        stroke="hsl(var(--primary-foreground))"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M14 18L18 23"
+        d="M8 10H16M8 16H16M8 22H16M16 16L20 10L24 16M16 22L20 16L24 22"
         stroke="hsl(var(--primary-foreground))"
         strokeWidth="2.5"
         strokeLinecap="round"
