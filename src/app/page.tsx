@@ -37,8 +37,7 @@ export default function Home() {
 
       <div className="grid gap-6 md:grid-cols-3">
         {menuItems.map((item) => (
-          <Link href={item.href} key={item.href} legacyBehavior>
-            <a className="block group">
+          <Link href={item.href} key={item.href} className="block group">
               <Card className="h-full transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-2 hover:border-primary">
                 <CardHeader>
                   <div className="flex items-center gap-4">
@@ -56,7 +55,6 @@ export default function Home() {
                   </div>
                 </CardContent>
               </Card>
-            </a>
           </Link>
         ))}
       </div>
