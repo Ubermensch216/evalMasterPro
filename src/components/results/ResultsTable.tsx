@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useMemo } from "react";
@@ -72,14 +73,14 @@ export default function ResultsTable({ showDetails = false }: ResultsTableProps)
 
   return (
     <div className="border rounded-lg">
-      <Table>
+      <Table className="min-w-[600px] md:min-w-full">
         <TableHeader>
           <TableRow>
-            <TableHead className="text-center w-[15%]">순위</TableHead>
-            <TableHead className="w-[30%]">이름</TableHead>
-            <TableHead className="text-center w-[20%]">총점</TableHead>
-            <TableHead className="text-center w-[20%]">평균</TableHead>
-            {showDetails && <TableHead className="text-center w-[15%]">상세보기</TableHead>}
+            <TableHead className="text-center w-[80px]">순위</TableHead>
+            <TableHead>이름</TableHead>
+            <TableHead className="text-center w-[120px]">총점</TableHead>
+            <TableHead className="text-center w-[120px]">평균</TableHead>
+            {showDetails && <TableHead className="text-center w-[100px]">상세보기</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>

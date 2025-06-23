@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -24,12 +25,12 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
         </Button>
       </div>
       <Tabs defaultValue="results" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-5">
-          <TabsTrigger value="results"><Trophy className="mr-2 h-4 w-4" />결과 집계</TabsTrigger>
-          <TabsTrigger value="evaluators"><Users className="mr-2 h-4 w-4" />평가 위원</TabsTrigger>
-          <TabsTrigger value="candidates"><UserCheck className="mr-2 h-4 w-4" />평가 대상자</TabsTrigger>
-          <TabsTrigger value="items"><ListChecks className="mr-2 h-4 w-4" />평가 항목</TabsTrigger>
-          <TabsTrigger value="settings"><Settings className="mr-2 h-4 w-4" />시스템 설정</TabsTrigger>
+        <TabsList className="grid w-full h-auto grid-cols-2 md:grid-cols-5 md:h-10">
+          <TabsTrigger value="results" className="whitespace-normal h-full py-2"><Trophy className="mr-2 h-4 w-4" />결과 집계</TabsTrigger>
+          <TabsTrigger value="evaluators" className="whitespace-normal h-full py-2"><Users className="mr-2 h-4 w-4" />평가 위원</TabsTrigger>
+          <TabsTrigger value="candidates" className="whitespace-normal h-full py-2"><UserCheck className="mr-2 h-4 w-4" />평가 대상자</TabsTrigger>
+          <TabsTrigger value="items" className="whitespace-normal h-full py-2"><ListChecks className="mr-2 h-4 w-4" />평가 항목</TabsTrigger>
+          <TabsTrigger value="settings" className="whitespace-normal h-full py-2"><Settings className="mr-2 h-4 w-4" />시스템 설정</TabsTrigger>
         </TabsList>
         <TabsContent value="results" className="mt-4">
           <ResultAggregation />

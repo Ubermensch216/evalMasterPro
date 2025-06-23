@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -147,8 +148,9 @@ export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboa
                               <AccordionContent>
                                 <div className="space-y-6 p-4 border rounded-md">
                                   {items.map(item => (
-                                      <div key={item.id} className="grid grid-cols-3 gap-4 items-center">
-                                          <Label htmlFor={`${candidate.id}-${item.id}`}>{item.name}</Label>
+                                    <div key={item.id} className="grid grid-cols-1 sm:grid-cols-[1fr_auto] sm:items-center gap-2">
+                                        <Label htmlFor={`${candidate.id}-${item.id}`}>{item.name}</Label>
+                                        <div className="flex items-center gap-2 justify-self-start sm:justify-self-end">
                                           <Input 
                                               id={`${candidate.id}-${item.id}`}
                                               type="number"
@@ -157,10 +159,11 @@ export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboa
                                               max={item.maxScore}
                                               min={0}
                                               disabled={isScored}
-                                              className="w-full"
+                                              className="w-28"
                                           />
-                                          <p className="text-sm text-muted-foreground">/ {item.maxScore}점</p>
-                                      </div>
+                                          <p className="text-sm text-muted-foreground whitespace-nowrap">/ {item.maxScore}점</p>
+                                        </div>
+                                    </div>
                                   ))}
                                   <div className="space-y-2">
                                       <Label htmlFor={`comment-${candidate.id}`}>기타 의견 (최대 300자)</Label>
