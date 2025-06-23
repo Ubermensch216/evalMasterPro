@@ -15,7 +15,7 @@ import { useReactToPrint } from "react-to-print";
 export default function ResultAggregation() {
   const { evaluators, candidates, items, scores, comments } = useStore();
   const [selectedEvaluatorId, setSelectedEvaluatorId] = useState<string | null>(null);
-  const printComponentRef = useRef<HTMLDivElement>(null);
+  const printComponentRef = useRef<PrintableView>(null);
 
   const selectedEvaluator = evaluators.find(e => e.id === selectedEvaluatorId);
 
