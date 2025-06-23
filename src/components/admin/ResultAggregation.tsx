@@ -53,7 +53,6 @@ export default function ResultAggregation() {
     printWindow.onload = () => {
       printWindow.focus();
       printWindow.print();
-      printWindow.close();
     };
   };
 
