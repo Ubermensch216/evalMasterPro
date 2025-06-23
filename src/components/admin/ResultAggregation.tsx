@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { PrintableView } from "./PrintableView";
-import { useReactToPrint } from "react-to-print";
+import ReactToPrint from "react-to-print";
 import { cn } from "@/lib/utils";
 
 export default function ResultAggregation() {
@@ -18,11 +18,6 @@ export default function ResultAggregation() {
   const printRef = useRef<HTMLDivElement>(null);
 
   const selectedEvaluator = evaluators.find(e => e.id === selectedEvaluatorId);
-
-  const handlePrint = useReactToPrint({
-    content: () => printRef.current,
-    documentTitle: `${selectedEvaluator?.name ?? ''} 평가위원 채점 결과`,
-  });
 
   return (
     <div className="space-y-6">
@@ -66,10 +61,16 @@ export default function ResultAggregation() {
                         </DialogHeader>
                         <div className="p-4">
                            <div className="no-print absolute top-4 right-16">
-                             <button onClick={handlePrint} className={cn(buttonVariants())}>
-                                <Printer />
-                                인쇄
-                             </button>
+                             <ReactToPrint
+                                trigger={() => (
+                                    <button className={cn(buttonVariants())}>
+                                        <Printer className="mr-2 h-4 w-4" />
+                                        인쇄
+                                    </button>
+                                )}
+                                content={() => printRef.current}
+                                documentTitle={`${selectedEvaluator?.name ?? ''} 평가위원 채점 결과`}
+                              />
                            </div>
                            <PrintableView ref={printRef} evaluator={selectedEvaluator} />
                         </div>
