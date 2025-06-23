@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useStore } from "@/lib/store";
@@ -22,7 +23,6 @@ export default function ResultAggregation() {
   const handlePrint = useReactToPrint({
     content: () => printRef.current,
     documentTitle: `${selectedEvaluator?.name ?? ''} 평가위원 채점 결과`,
-    removeAfterPrint: true,
   });
 
   return (
@@ -71,7 +71,6 @@ export default function ResultAggregation() {
                         </DialogHeader>
                         <div className="pt-4">
                            <PrintableView
-                             ref={printRef}
                              evaluator={selectedEvaluator}
                              candidates={candidates}
                              items={items}
@@ -84,6 +83,20 @@ export default function ResultAggregation() {
             </Dialog>
         </CardContent>
       </Card>
+      
+      {/* Hidden component for printing */}
+      <div className="hidden">
+        {selectedEvaluator && (
+          <PrintableView
+            ref={printRef}
+            evaluator={selectedEvaluator}
+            candidates={candidates}
+            items={items}
+            scores={scores}
+            comments={comments}
+          />
+        )}
+      </div>
     </div>
   );
 }
