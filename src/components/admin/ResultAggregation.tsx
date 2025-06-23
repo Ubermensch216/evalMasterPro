@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useStore } from "@/lib/store";
@@ -37,11 +38,57 @@ export default function ResultAggregation() {
 
     printWindow.document.write(`
         <style>
+          /* These styles are added to help the print layout */
           @media print {
-            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .no-print { display: none !important; }
+            @page {
+              size: A4;
+              margin: 1.5cm;
+            }
+
+            html, body {
+              width: 100%;
+              height: auto;
+              font-size: 10pt;
+              background: white !important;
+              color: black !important;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+
+            .no-print {
+              display: none !important;
+            }
+
+            /* Ensure the table fits the width of the page */
+            table {
+              width: 100% !important;
+              table-layout: auto !important;
+              border-collapse: collapse !important;
+            }
+
+            /* Repeat the table header on each page */
+            thead {
+              display: table-header-group !important;
+            }
+
+            /* Add borders and adjust padding for readability */
+            th, td {
+              border: 1px solid #ccc !important;
+              padding: 6px !important;
+              word-break: break-word;
+            }
+
+            /* Prevent rows and the footer from being split across pages */
+            tr, footer {
+              page-break-inside: avoid !important;
+            }
+
+            /* Adjust typography for print */
+            h1 { font-size: 18pt !important; }
+            .text-xl { font-size: 12pt !important; }
+            .text-lg { font-size: 11pt !important; }
+            p, span, div { font-size: 10pt !important; }
           }
-          body { margin: 1.5rem; }
         </style>
       `);
 

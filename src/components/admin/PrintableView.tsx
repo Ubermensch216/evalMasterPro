@@ -46,12 +46,12 @@ export const PrintableView = React.forwardRef<HTMLDivElement, PrintableViewProps
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="min-w-[120px]">평가 대상자</TableHead>
+                <TableHead>평가 대상자</TableHead>
                 {items.map(item => (
-                  <TableHead key={item.id} className="text-center min-w-[100px]">{item.name}<br/>({item.maxScore}점)</TableHead>
+                  <TableHead key={item.id} className="text-center">{item.name}<br/>({item.maxScore}점)</TableHead>
                 ))}
-                <TableHead className="text-center min-w-[80px]">총점<br/>({totalMaxScore}점)</TableHead>
-                <TableHead className="min-w-[200px]">기타 의견</TableHead>
+                <TableHead className="text-center">총점<br/>({totalMaxScore}점)</TableHead>
+                <TableHead>기타 의견</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
