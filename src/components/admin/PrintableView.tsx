@@ -3,8 +3,6 @@
 import React from "react";
 import { useStore, type Evaluator } from "@/lib/store";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 
 interface PrintableViewProps {
   evaluator: Evaluator;
@@ -21,8 +19,16 @@ export const PrintableView = React.forwardRef<HTMLDivElement, PrintableViewProps
   };
 
   const getComment = (candidateId: string) => {
-    return evaluatorComments.find(c => c.candidateId === candidateId)?.commentText ?? "-";
+    return evaluatorComments.find(c => c.candidateId === candidateId)?.commentText ?? "";
   };
+
+  const getTotalScore = (candidateId: string) => {
+    return evaluatorScores
+        .filter(s => s.candidateId === candidateId)
+        .reduce((sum, s) => sum + s.score, 0);
+  };
+
+  const totalMaxScore = items.reduce((sum, item) => sum + item.maxScore, 0);
 
   return (
     <div ref={ref} className="p-8 bg-white text-black">
@@ -32,38 +38,36 @@ export const PrintableView = React.forwardRef<HTMLDivElement, PrintableViewProps
       </header>
       
       <main>
-        {candidates.map(candidate => (
-          <Card key={candidate.id} className="mb-6 break-inside-avoid">
-            <CardHeader>
-              <CardTitle>{candidate.name}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-2/3">평가 항목</TableHead>
-                    <TableHead className="text-center">배점</TableHead>
-                    <TableHead className="text-center">점수</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {items.map(item => (
-                    <TableRow key={item.id}>
-                      <TableCell>{item.name}</TableCell>
-                      <TableCell className="text-center">{item.maxScore}</TableCell>
-                      <TableCell className="text-center font-bold">{getScore(candidate.id, item.id)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              <Separator className="my-4"/>
-              <div>
-                <h4 className="font-bold mb-2">기타 의견</h4>
-                <p className="text-sm p-3 border rounded-md min-h-[60px] bg-gray-50">{getComment(candidate.id)}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="min-w-[120px]">평가 대상자</TableHead>
+              {items.map(item => (
+                <TableHead key={item.id} className="text-center min-w-[100px]">{item.name}<br/>({item.maxScore}점)</TableHead>
+              ))}
+              <TableHead className="text-center min-w-[80px]">총점<br/>({totalMaxScore}점)</TableHead>
+              <TableHead className="min-w-[200px]">기타 의견</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {candidates.map(candidate => (
+              <TableRow key={candidate.id}>
+                <TableCell className="font-medium">{candidate.name}</TableCell>
+                {items.map(item => (
+                  <TableCell key={item.id} className="text-center">
+                    {getScore(candidate.id, item.id)}
+                  </TableCell>
+                ))}
+                <TableCell className="text-center font-bold">
+                  {getTotalScore(candidate.id)}
+                </TableCell>
+                <TableCell className="text-sm whitespace-pre-wrap break-all">
+                  {getComment(candidate.id)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </main>
 
       <footer className="mt-20 text-right">
