@@ -55,7 +55,7 @@ export default function SettingsPanel() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center"><KeyRound className="mr-2 h-5 w-5" />일반 비밀번호 변경</CardTitle>
-          <CardDescription>관리자 일반 비밀번호를 변경합니다. 절대 비밀번호(0000)는 변경할 수 없습니다.</CardDescription>
+          <CardDescription>관리자 일반 비밀번호를 변경합니다. 절대 비밀번호(0132)는 변경할 수 없습니다.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>

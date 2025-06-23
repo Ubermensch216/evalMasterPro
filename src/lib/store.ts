@@ -61,7 +61,7 @@ interface StoreState {
   scores: Score[];
   comments: Comment[];
   adminPassword: string;
-  superPassword: "0000";
+  superPassword: "0132";
 }
 
 interface StoreActions {
@@ -119,7 +119,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     scores: [],
     comments: [],
     adminPassword: '',
-    superPassword: "0000",
+    superPassword: "0132",
   });
 
   const resetStore = useCallback(async () => {
