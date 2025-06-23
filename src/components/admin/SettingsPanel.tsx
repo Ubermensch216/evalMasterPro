@@ -8,11 +8,12 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { RotateCw, KeyRound, Loader2, Save, Eraser } from "lucide-react";
+import { RotateCw, KeyRound, Loader2, Save, Eraser, ShieldCheck, ShieldAlert } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function SettingsPanel() {
-  const { systemName, setSystemName, setAdminPassword, resetAdminPassword, resetStore } = useStore();
+  const { systemName, adminPassword, setSystemName, setAdminPassword, resetAdminPassword, resetStore } = useStore();
   
   const [systemNameInput, setSystemNameInput] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -116,36 +117,43 @@ export default function SettingsPanel() {
       
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center"><KeyRound className="mr-2 h-5 w-5" />관리자 비밀번호 변경</CardTitle>
-          <CardDescription>관리자 비밀번호를 변경합니다.</CardDescription>
+          <CardTitle className="flex items-center"><KeyRound className="mr-2 h-5 w-5" />관리자 비밀번호 관리</CardTitle>
+          <CardDescription>일반 관리자 비밀번호를 변경하거나 초기화합니다.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {adminPassword ? (
+            <Alert>
+              <ShieldCheck className="h-4 w-4" />
+              <AlertTitle>비밀번호 설정됨</AlertTitle>
+              <AlertDescription>일반 관리자 비밀번호가 설정되어 있습니다.</AlertDescription>
+            </Alert>
+          ) : (
+            <Alert variant="destructive">
+              <ShieldAlert className="h-4 w-4" />
+              <AlertTitle>비밀번호 설정 안됨</AlertTitle>
+              <AlertDescription>일반 관리자 비밀번호가 없습니다. 절대 비밀번호로만 로그인이 가능합니다.</AlertDescription>
+            </Alert>
+          )}
           <div>
             <Label htmlFor="new-password">새 비밀번호</Label>
-            <Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+            <Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="새 비밀번호 입력" />
           </div>
           <div>
             <Label htmlFor="confirm-password">새 비밀번호 확인</Label>
-            <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+            <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="새 비밀번호 다시 입력"/>
           </div>
         </CardContent>
-        <CardFooter>
+        <CardFooter className="flex justify-between">
           <Button onClick={handleChangePassword} disabled={isSavingPassword}>
             {isSavingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isSavingPassword ? "변경 중..." : "비밀번호 변경"}
           </Button>
-        </CardFooter>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center"><Eraser className="mr-2 h-5 w-5" />관리자 비밀번호 초기화</CardTitle>
-          <CardDescription>일반 관리자 비밀번호를 삭제합니다. 초기화 후에는 절대 비밀번호로만 로그인할 수 있습니다.</CardDescription>
-        </CardHeader>
-        <CardContent>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="secondary" className="w-full">관리자 비밀번호 초기화</Button>
+              <Button variant="secondary" disabled={!adminPassword || isResetingPassword}>
+                <Eraser className="mr-2 h-4 w-4" />
+                초기화
+              </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
@@ -156,17 +164,17 @@ export default function SettingsPanel() {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel disabled={isResetingPassword}>취소</AlertDialogCancel>
-                <AlertDialogAction onClick={handleResetPassword} disabled={isResetingPassword}>
+                <AlertDialogAction onClick={handleResetPassword} disabled={isResetingPassword} className="bg-destructive hover:bg-destructive/90">
                    {isResetingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                    {isResetingPassword ? "초기화 중..." : "초기화 진행"}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-        </CardContent>
+        </CardFooter>
       </Card>
 
-      <Card className="border-destructive">
+      <Card className="border-destructive md:col-span-2">
         <CardHeader>
           <CardTitle className="flex items-center text-destructive"><RotateCw className="mr-2 h-5 w-5" />시스템 초기화</CardTitle>
           <CardDescription>시스템의 모든 데이터를 영구적으로 삭제하고 초기 상태로 되돌립니다. 이 작업은 되돌릴 수 없습니다.</CardDescription>
