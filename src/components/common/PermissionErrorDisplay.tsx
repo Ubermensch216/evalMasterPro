@@ -39,11 +39,11 @@ export default function PermissionErrorDisplay() {
           <p>
             아래 단계에 따라 Firestore 보안 규칙을 업데이트해주세요.
           </p>
-          <ol className="list-decimal list-inside space-y-1 pl-2">
+          <ol className="list-decimal list-inside space-y-2 pl-2">
             <li>Firebase 콘솔(<a href="https://console.firebase.google.com" target="_blank" rel="noopener noreferrer" className="underline text-primary">console.firebase.google.com</a>)을 엽니다.</li>
             <li>프로젝트를 선택하고 <strong>빌드 &gt; Firestore Database</strong>로 이동합니다.</li>
             <li>상단의 <strong>규칙(Rules)</strong> 탭을 선택합니다.</li>
-            <li>편집기의 모든 내용을 아래 코드로 교체합니다.</li>
+            <li>편집기의 모든 내용을 아래 코드로 <strong>완전히 교체</strong>합니다. (기존 내용을 모두 지우고 붙여넣으세요)</li>
           </ol>
           <pre className="mt-2 w-full rounded-md bg-slate-950 p-4 font-mono text-sm text-slate-50 overflow-x-auto">
             <code>
@@ -51,7 +51,7 @@ export default function PermissionErrorDisplay() {
 service cloud.firestore {
   match /databases/{database}/documents {
     match /{document=**} {
-      // 개발용: 누구나 데이터를 읽고 쓸 수 있도록 허용합니다.
+      // Allow read/write access for development.
       allow read, write: if true;
     }
   }
