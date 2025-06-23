@@ -9,30 +9,40 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PlusCircle, Edit, Trash2 } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function ItemManager() {
   const { items, addItem, updateItem, deleteItem } = useStore();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [currentItem, setCurrentItem] = useState<Partial<EvaluationItem>>({maxScore: 10});
   const { toast } = useToast();
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!currentItem.name || currentItem.maxScore === undefined || currentItem.maxScore <= 0) {
       toast({ title: "오류", description: "항목명과 유효한 배점을 입력해주세요.", variant: "destructive" });
       return;
     }
 
-    if (currentItem.id) {
-      updateItem(currentItem.id, currentItem as EvaluationItem);
-      toast({ title: "성공", description: "평가 항목이 수정되었습니다." });
-    } else {
-      addItem(currentItem.name, currentItem.maxScore);
-      toast({ title: "성공", description: "새 평가 항목이 추가되었습니다." });
+    setIsSaving(true);
+    try {
+      if (currentItem.id) {
+        const { id, ...data } = currentItem;
+        await updateItem(id, data as Omit<EvaluationItem, 'id'>);
+        toast({ title: "성공", description: "평가 항목이 수정되었습니다." });
+      } else {
+        await addItem(currentItem.name, currentItem.maxScore);
+        toast({ title: "성공", description: "새 평가 항목이 추가되었습니다." });
+      }
+      setCurrentItem({maxScore: 10});
+      setDialogOpen(false);
+    } catch (error) {
+      console.error("Failed to save item:", error);
+      toast({ title: "오류", description: "저장에 실패했습니다.", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
     }
-    setCurrentItem({maxScore: 10});
-    setDialogOpen(false);
   };
 
   const openEditDialog = (item: EvaluationItem) => {
@@ -45,9 +55,14 @@ export default function ItemManager() {
     setDialogOpen(true);
   };
   
-  const handleDelete = (id: string) => {
-    deleteItem(id);
-    toast({ title: "성공", description: "평가 항목이 삭제되었습니다." });
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteItem(id);
+      toast({ title: "성공", description: "평가 항목이 삭제되었습니다." });
+    } catch (error) {
+      console.error("Failed to delete item:", error);
+      toast({ title: "오류", description: "삭제에 실패했습니다.", variant: "destructive" });
+    }
   }
 
   return (
@@ -88,8 +103,11 @@ export default function ItemManager() {
                 </div>
               </div>
               <DialogFooter>
-                <DialogClose asChild><Button variant="outline">취소</Button></DialogClose>
-                <Button onClick={handleSave}>저장</Button>
+                <DialogClose asChild><Button variant="outline" disabled={isSaving}>취소</Button></DialogClose>
+                <Button onClick={handleSave} disabled={isSaving}>
+                  {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {isSaving ? "저장 중..." : "저장"}
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>

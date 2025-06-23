@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Users } from "lucide-react";
+import { Users, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface EvaluatorLoginProps {
@@ -15,7 +15,7 @@ interface EvaluatorLoginProps {
 }
 
 export default function EvaluatorLogin({ onLogin }: EvaluatorLoginProps) {
-  const { evaluators } = useStore();
+  const { evaluators, loading } = useStore();
   const [selectedEvaluator, setSelectedEvaluator] = useState("");
   const [password, setPassword] = useState("");
   const { toast } = useToast();
@@ -53,9 +53,9 @@ export default function EvaluatorLogin({ onLogin }: EvaluatorLoginProps) {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="evaluator">평가 위원</Label>
-              <Select onValueChange={setSelectedEvaluator} value={selectedEvaluator}>
+              <Select onValueChange={setSelectedEvaluator} value={selectedEvaluator} disabled={loading}>
                 <SelectTrigger id="evaluator">
-                  <SelectValue placeholder="이름을 선택하세요" />
+                  <SelectValue placeholder={loading ? "위원 목록 로딩 중..." : "이름을 선택하세요"} />
                 </SelectTrigger>
                 <SelectContent>
                   {evaluators.map((e) => (
@@ -74,12 +74,14 @@ export default function EvaluatorLogin({ onLogin }: EvaluatorLoginProps) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                disabled={loading}
               />
             </div>
           </CardContent>
           <CardFooter>
-            <Button type="submit" className="w-full">
-              채점 페이지로 이동
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {loading ? "로딩 중..." : "채점 페이지로 이동"}
             </Button>
           </CardFooter>
         </form>

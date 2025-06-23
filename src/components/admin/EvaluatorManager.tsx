@@ -9,30 +9,40 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PlusCircle, Edit, Trash2 } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function EvaluatorManager() {
   const { evaluators, addEvaluator, updateEvaluator, deleteEvaluator } = useStore();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [currentEvaluator, setCurrentEvaluator] = useState<Partial<Evaluator>>({});
   const { toast } = useToast();
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!currentEvaluator.name || !currentEvaluator.password) {
       toast({ title: "오류", description: "이름과 비밀번호를 모두 입력해주세요.", variant: "destructive" });
       return;
     }
 
-    if (currentEvaluator.id) {
-      updateEvaluator(currentEvaluator.id, currentEvaluator as Evaluator);
-      toast({ title: "성공", description: "평가 위원 정보가 수정되었습니다." });
-    } else {
-      addEvaluator(currentEvaluator.name, currentEvaluator.password);
-      toast({ title: "성공", description: "새 평가 위원이 추가되었습니다." });
+    setIsSaving(true);
+    try {
+      if (currentEvaluator.id) {
+        const { id, ...data } = currentEvaluator;
+        await updateEvaluator(id, data as Omit<Evaluator, 'id'>);
+        toast({ title: "성공", description: "평가 위원 정보가 수정되었습니다." });
+      } else {
+        await addEvaluator(currentEvaluator.name, currentEvaluator.password);
+        toast({ title: "성공", description: "새 평가 위원이 추가되었습니다." });
+      }
+      setCurrentEvaluator({});
+      setDialogOpen(false);
+    } catch (error) {
+      console.error("Failed to save evaluator:", error);
+      toast({ title: "오류", description: "저장에 실패했습니다.", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
     }
-    setCurrentEvaluator({});
-    setDialogOpen(false);
   };
 
   const openEditDialog = (evaluator: Evaluator) => {
@@ -45,9 +55,14 @@ export default function EvaluatorManager() {
     setDialogOpen(true);
   };
   
-  const handleDelete = (id: string) => {
-    deleteEvaluator(id);
-    toast({ title: "성공", description: "평가 위원이 삭제되었습니다." });
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteEvaluator(id);
+      toast({ title: "성공", description: "평가 위원이 삭제되었습니다." });
+    } catch (error) {
+      console.error("Failed to delete evaluator:", error);
+      toast({ title: "오류", description: "삭제에 실패했습니다.", variant: "destructive" });
+    }
   }
 
   return (
@@ -88,8 +103,11 @@ export default function EvaluatorManager() {
                 </div>
               </div>
               <DialogFooter>
-                <DialogClose asChild><Button variant="outline">취소</Button></DialogClose>
-                <Button onClick={handleSave}>저장</Button>
+                <DialogClose asChild><Button variant="outline" disabled={isSaving}>취소</Button></DialogClose>
+                <Button onClick={handleSave} disabled={isSaving}>
+                  {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {isSaving ? "저장 중..." : "저장"}
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>

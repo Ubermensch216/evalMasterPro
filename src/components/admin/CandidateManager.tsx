@@ -9,30 +9,40 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PlusCircle, Edit, Trash2 } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function CandidateManager() {
   const { candidates, addCandidate, updateCandidate, deleteCandidate } = useStore();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [currentCandidate, setCurrentCandidate] = useState<Partial<Candidate>>({});
   const { toast } = useToast();
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!currentCandidate.name) {
       toast({ title: "오류", description: "대상자 이름을 입력해주세요.", variant: "destructive" });
       return;
     }
 
-    if (currentCandidate.id) {
-      updateCandidate(currentCandidate.id, currentCandidate as Candidate);
-      toast({ title: "성공", description: "평가 대상자 정보가 수정되었습니다." });
-    } else {
-      addCandidate(currentCandidate.name);
-      toast({ title: "성공", description: "새 평가 대상자가 추가되었습니다." });
+    setIsSaving(true);
+    try {
+      if (currentCandidate.id) {
+        const { id, ...data } = currentCandidate;
+        await updateCandidate(id, data as Omit<Candidate, 'id'>);
+        toast({ title: "성공", description: "평가 대상자 정보가 수정되었습니다." });
+      } else {
+        await addCandidate(currentCandidate.name);
+        toast({ title: "성공", description: "새 평가 대상자가 추가되었습니다." });
+      }
+      setCurrentCandidate({});
+      setDialogOpen(false);
+    } catch (error) {
+      console.error("Failed to save candidate:", error);
+      toast({ title: "오류", description: "저장에 실패했습니다.", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
     }
-    setCurrentCandidate({});
-    setDialogOpen(false);
   };
 
   const openEditDialog = (candidate: Candidate) => {
@@ -45,9 +55,14 @@ export default function CandidateManager() {
     setDialogOpen(true);
   };
   
-  const handleDelete = (id: string) => {
-    deleteCandidate(id);
-    toast({ title: "성공", description: "평가 대상자가 삭제되었습니다." });
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteCandidate(id);
+      toast({ title: "성공", description: "평가 대상자가 삭제되었습니다." });
+    } catch (error) {
+       console.error("Failed to delete candidate:", error);
+      toast({ title: "오류", description: "삭제에 실패했습니다.", variant: "destructive" });
+    }
   }
 
   return (
@@ -78,8 +93,11 @@ export default function CandidateManager() {
                 </div>
               </div>
               <DialogFooter>
-                <DialogClose asChild><Button variant="outline">취소</Button></DialogClose>
-                <Button onClick={handleSave}>저장</Button>
+                <DialogClose asChild><Button variant="outline" disabled={isSaving}>취소</Button></DialogClose>
+                <Button onClick={handleSave} disabled={isSaving}>
+                  {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {isSaving ? "저장 중..." : "저장"}
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>

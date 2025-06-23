@@ -1,20 +1,23 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useStore } from "@/lib/store";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Eye } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ResultsTableProps {
   showDetails?: boolean;
 }
 
 export default function ResultsTable({ showDetails = false }: ResultsTableProps) {
-  const { candidates, items, scores, evaluators } = useStore();
+  const { candidates, items, scores, evaluators, loading } = useStore();
 
   const results = useMemo(() => {
+    if (loading) return [];
+
     const candidateScores = candidates.map(candidate => {
       const candidateId = candidate.id;
       const relatedScores = scores.filter(s => s.candidateId === candidateId);
@@ -46,7 +49,18 @@ export default function ResultsTable({ showDetails = false }: ResultsTableProps)
       ...res,
       rank: index + 1,
     }));
-  }, [candidates, scores, evaluators]);
+  }, [candidates, scores, evaluators, loading]);
+  
+  if (loading) {
+    return (
+      <div className="border rounded-lg p-4 space-y-2">
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+    );
+  }
 
   if (candidates.length === 0) {
     return <p className="text-center text-muted-foreground py-8">아직 등록된 평가 대상자가 없습니다.</p>;
