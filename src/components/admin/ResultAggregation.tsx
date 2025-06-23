@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useStore } from "@/lib/store";
@@ -10,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { PrintableView } from "./PrintableView";
-import { useReactToPrint } from "react-to-print";
 import { cn } from "@/lib/utils";
 
 export default function ResultAggregation() {
@@ -20,10 +18,44 @@ export default function ResultAggregation() {
 
   const selectedEvaluator = evaluators.find(e => e.id === selectedEvaluatorId);
 
-  const handlePrint = useReactToPrint({
-    content: () => printComponentRef.current,
-    documentTitle: `${selectedEvaluator?.name ?? ''} 평가위원 채점 결과`,
-  });
+  const handlePrint = () => {
+    const printContent = printComponentRef.current;
+    if (!printContent || !selectedEvaluator) return;
+
+    const printWindow = window.open('', '', 'height=800,width=1000');
+    if (!printWindow) {
+      alert('팝업 창이 차단되었습니다. 팝업을 허용하고 다시 시도해 주세요.');
+      return;
+    }
+
+    printWindow.document.write(`<html><head><title>${selectedEvaluator.name} 위원 채점 보고서</title>`);
+
+    const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'));
+    styles.forEach(style => {
+      printWindow.document.write(style.outerHTML);
+    });
+
+    printWindow.document.write(`
+        <style>
+          @media print {
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .no-print { display: none !important; }
+          }
+          body { margin: 1.5rem; }
+        </style>
+      `);
+
+    printWindow.document.write('</head><body>');
+    printWindow.document.write(printContent.innerHTML);
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+
+    printWindow.onload = () => {
+      printWindow.focus();
+      printWindow.print();
+      printWindow.close();
+    };
+  };
 
   return (
     <div className="space-y-6">
