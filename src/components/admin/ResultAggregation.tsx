@@ -3,13 +3,14 @@
 import { useStore, type Evaluator } from "@/lib/store";
 import ResultsTable from "@/components/results/ResultsTable";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Printer, User } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { PrintableView } from "./PrintableView";
 import { useReactToPrint } from "react-to-print";
+import { cn } from "@/lib/utils";
 
 export default function ResultAggregation() {
   const { evaluators } = useStore();
@@ -65,7 +66,10 @@ export default function ResultAggregation() {
                         </DialogHeader>
                         <div className="p-4">
                            <div className="no-print absolute top-4 right-16">
-                             <Button onClick={handlePrint}><Printer className="mr-2 h-4 w-4" />인쇄</Button>
+                             <button onClick={handlePrint} className={cn(buttonVariants())}>
+                                <Printer />
+                                인쇄
+                             </button>
                            </div>
                            <PrintableView ref={printRef} evaluator={selectedEvaluator} />
                         </div>
