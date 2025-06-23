@@ -43,7 +43,7 @@ export default function ResultAggregation() {
           <CardDescription>평가위원을 선택하여 채점 내역 보고서를 조회하고 출력합니다.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col sm:flex-row items-center gap-4">
-            <Select onValuechange={setSelectedEvaluatorId} value={selectedEvaluatorId ?? undefined}>
+            <Select onValueChange={setSelectedEvaluatorId} value={selectedEvaluatorId ?? undefined}>
                 <SelectTrigger className="w-full sm:w-[280px]">
                     <SelectValue placeholder={<div className="flex items-center gap-2 text-muted-foreground"><User className="h-4 w-4" /><span>평가위원을 선택하세요</span></div>} />
                 </SelectTrigger>
