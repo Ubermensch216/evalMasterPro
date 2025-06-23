@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { createContext, useContext, useState, type ReactNode, useEffect, useCallback, useMemo } from 'react';
@@ -153,7 +154,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
     const handleError = (error: Error & { code?: string }) => {
       if (error.code === 'permission-denied') {
-        console.error("Firestore Permission Denied. Please check your security rules in the Firebase Console.");
         setState(prev => ({ ...prev, permissionError: true, loading: false }));
       } else {
         console.error("Firestore snapshot error:", error);
@@ -195,23 +195,35 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [resetStore]);
 
 
-  const actions: StoreActions = {
-    addEvaluator: useCallback(async (name, password) => { await addDoc(collection(db, 'evaluators'), { name, password }); }, []),
-    updateEvaluator: useCallback(async (id, updated) => { await updateDoc(doc(db, 'evaluators', id), updated); }, []),
-    deleteEvaluator: useCallback(async (id) => { await deleteDoc(doc(db, 'evaluators', id)); }, []),
-    addCandidate: useCallback(async (name) => { await addDoc(collection(db, 'candidates'), { name }); }, []),
-    updateCandidate: useCallback(async (id, updated) => { await updateDoc(doc(db, 'candidates', id), updated); }, []),
-    deleteCandidate: useCallback(async (id) => { await deleteDoc(doc(db, 'candidates', id)); }, []),
-    addItem: useCallback(async (name, maxScore) => { await addDoc(collection(db, 'items'), { name, maxScore }); }, []),
-    updateItem: useCallback(async (id, updated) => { await updateDoc(doc(db, 'items', id), updated); }, []),
-    deleteItem: useCallback(async (id) => { await deleteDoc(doc(db, 'items', id)); }, []),
-    addScore: useCallback(async (candidateId, evaluatorId, evaluationItemId, score) => { await addDoc(collection(db, 'scores'), { candidateId, evaluatorId, evaluationItemId, score }); }, []),
-    addComment: useCallback(async (candidateId, evaluatorId, commentText) => { await addDoc(collection(db, 'comments'), { candidateId, evaluatorId, commentText }); }, []),
-    setAdminPassword: useCallback(async (password) => { await setDoc(doc(db, 'settings', 'admin'), { password }); }, []),
-    resetStore,
-  };
+  const addEvaluator = useCallback(async (name: string, password: string) => { await addDoc(collection(db, 'evaluators'), { name, password }); }, []);
+  const updateEvaluator = useCallback(async (id: string, updated: Omit<Evaluator, 'id'>) => { await updateDoc(doc(db, 'evaluators', id), updated); }, []);
+  const deleteEvaluator = useCallback(async (id: string) => { await deleteDoc(doc(db, 'evaluators', id)); }, []);
+  const addCandidate = useCallback(async (name: string) => { await addDoc(collection(db, 'candidates'), { name }); }, []);
+  const updateCandidate = useCallback(async (id: string, updated: Omit<Candidate, 'id'>) => { await updateDoc(doc(db, 'candidates', id), updated); }, []);
+  const deleteCandidate = useCallback(async (id: string) => { await deleteDoc(doc(db, 'candidates', id)); }, []);
+  const addItem = useCallback(async (name: string, maxScore: number) => { await addDoc(collection(db, 'items'), { name, maxScore }); }, []);
+  const updateItem = useCallback(async (id: string, updated: Omit<EvaluationItem, 'id'>) => { await updateDoc(doc(db, 'items', id), updated); }, []);
+  const deleteItem = useCallback(async (id: string) => { await deleteDoc(doc(db, 'items', id)); }, []);
+  const addScore = useCallback(async (candidateId: string, evaluatorId: string, evaluationItemId: string, score: number) => { await addDoc(collection(db, 'scores'), { candidateId, evaluatorId, evaluationItemId, score }); }, []);
+  const addComment = useCallback(async (candidateId: string, evaluatorId: string, commentText: string) => { await addDoc(collection(db, 'comments'), { candidateId, evaluatorId, commentText }); }, []);
+  const setAdminPassword = useCallback(async (password: string) => { await setDoc(doc(db, 'settings', 'admin'), { password }); }, []);
 
-  const value = useMemo(() => ({ ...state, ...actions }), [state, actions]);
+  const value = useMemo(() => ({
+    ...state,
+    addEvaluator,
+    updateEvaluator,
+    deleteEvaluator,
+    addCandidate,
+    updateCandidate,
+    deleteCandidate,
+    addItem,
+    updateItem,
+    deleteItem,
+    addScore,
+    addComment,
+    setAdminPassword,
+    resetStore
+  }), [state, addEvaluator, updateEvaluator, deleteEvaluator, addCandidate, updateCandidate, deleteCandidate, addItem, updateItem, deleteItem, addScore, addComment, setAdminPassword, resetStore]);
 
   return React.createElement(StoreContext.Provider, { value }, children);
 }
