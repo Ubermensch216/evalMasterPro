@@ -3,14 +3,13 @@
 import { useStore, type Evaluator } from "@/lib/store";
 import ResultsTable from "@/components/results/ResultsTable";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Printer, User } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { PrintableView } from "./PrintableView";
-import ReactToPrint from "react-to-print";
-import { cn } from "@/lib/utils";
+import { useReactToPrint } from "react-to-print";
 
 export default function ResultAggregation() {
   const { evaluators } = useStore();
@@ -18,6 +17,12 @@ export default function ResultAggregation() {
   const printRef = useRef<HTMLDivElement>(null);
 
   const selectedEvaluator = evaluators.find(e => e.id === selectedEvaluatorId);
+
+  const handlePrint = useReactToPrint({
+    content: () => printRef.current,
+    documentTitle: `${selectedEvaluator?.name ?? ''} 평가위원 채점 결과`,
+    removeAfterPrint: true,
+  });
 
   return (
     <div className="space-y-6">
@@ -56,22 +61,14 @@ export default function ResultAggregation() {
                 </DialogTrigger>
                 {selectedEvaluator && (
                      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                        <DialogHeader>
+                        <DialogHeader className="flex-row items-center justify-between pr-6">
                             <DialogTitle>{selectedEvaluator.name} 위원 채점 보고서</DialogTitle>
+                            <Button onClick={handlePrint} variant="outline" size="sm" className="no-print">
+                                <Printer className="mr-2 h-4 w-4" />
+                                인쇄
+                            </Button>
                         </DialogHeader>
-                        <div className="p-4">
-                           <div className="no-print absolute top-4 right-16">
-                             <ReactToPrint
-                                trigger={() => (
-                                    <button className={cn(buttonVariants())}>
-                                        <Printer className="mr-2 h-4 w-4" />
-                                        인쇄
-                                    </button>
-                                )}
-                                content={() => printRef.current}
-                                documentTitle={`${selectedEvaluator?.name ?? ''} 평가위원 채점 결과`}
-                              />
-                           </div>
+                        <div className="pt-4">
                            <PrintableView ref={printRef} evaluator={selectedEvaluator} />
                         </div>
                     </DialogContent>
