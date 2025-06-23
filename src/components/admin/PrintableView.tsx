@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from "react";
@@ -12,10 +13,8 @@ interface PrintableViewProps {
   comments: Comment[];
 }
 
-export class PrintableView extends React.Component<PrintableViewProps> {
-  render() {
-    const { evaluator, candidates, items, scores, comments } = this.props;
-
+export const PrintableView = React.forwardRef<HTMLDivElement, PrintableViewProps>(
+  ({ evaluator, candidates, items, scores, comments }, ref) => {
     const evaluatorScores = scores.filter(s => s.evaluatorId === evaluator.id);
     const evaluatorComments = comments.filter(c => c.evaluatorId === evaluator.id);
 
@@ -37,7 +36,7 @@ export class PrintableView extends React.Component<PrintableViewProps> {
     const totalMaxScore = items.reduce((sum, item) => sum + item.maxScore, 0);
 
     return (
-      <div className="p-8 bg-white text-black">
+      <div ref={ref} className="p-8 bg-white text-black">
         <header className="text-center mb-10">
           <h1 className="text-3xl font-bold">평가위원별 채점 결과 보고서</h1>
           <p className="text-xl mt-2">평가위원: <span className="font-semibold">{evaluator.name}</span></p>
@@ -83,4 +82,6 @@ export class PrintableView extends React.Component<PrintableViewProps> {
       </div>
     );
   }
-}
+);
+
+PrintableView.displayName = 'PrintableView';

@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 export default function ResultAggregation() {
   const { evaluators, candidates, items, scores, comments } = useStore();
   const [selectedEvaluatorId, setSelectedEvaluatorId] = useState<string | null>(null);
-  const printComponentRef = useRef<PrintableView>(null);
+  const printComponentRef = useRef<HTMLDivElement>(null);
 
   const selectedEvaluator = evaluators.find(e => e.id === selectedEvaluatorId);
 
