@@ -4,24 +4,23 @@
 import { useStore } from "@/lib/store";
 import ResultsTable from "@/components/results/ResultsTable";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Printer, User } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { PrintableView } from "./PrintableView";
 import { useReactToPrint } from "react-to-print";
-import { cn } from "@/lib/utils";
 
 export default function ResultAggregation() {
   const { evaluators, candidates, items, scores, comments } = useStore();
   const [selectedEvaluatorId, setSelectedEvaluatorId] = useState<string | null>(null);
-  const printRef = useRef<HTMLDivElement>(null);
+  const printComponentRef = useRef<HTMLDivElement>(null);
 
   const selectedEvaluator = evaluators.find(e => e.id === selectedEvaluatorId);
 
   const handlePrint = useReactToPrint({
-    content: () => printRef.current,
+    content: () => printComponentRef.current,
     documentTitle: `${selectedEvaluator?.name ?? ''} 평가위원 채점 결과`,
   });
 
@@ -61,42 +60,27 @@ export default function ResultAggregation() {
                     </Button>
                 </DialogTrigger>
                 {selectedEvaluator && (
-                     <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                        <DialogHeader className="flex-row items-center justify-between pr-6">
+                     <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto printable-dialog-content">
+                        <DialogHeader className="flex-row items-center justify-between pr-6 no-print">
                             <DialogTitle>{selectedEvaluator.name} 위원 채점 보고서</DialogTitle>
-                            <button onClick={handlePrint} className={cn(buttonVariants({ variant: "outline", size: "sm" }), "no-print")}>
+                            <Button onClick={handlePrint} variant="outline" size="sm">
                                 <Printer className="mr-2 h-4 w-4" />
                                 인쇄
-                            </button>
+                            </Button>
                         </DialogHeader>
-                        <div className="pt-4">
-                           <PrintableView
-                             evaluator={selectedEvaluator}
-                             candidates={candidates}
-                             items={items}
-                             scores={scores}
-                             comments={comments}
-                           />
-                        </div>
+                        <PrintableView
+                            ref={printComponentRef}
+                            evaluator={selectedEvaluator}
+                            candidates={candidates}
+                            items={items}
+                            scores={scores}
+                            comments={comments}
+                        />
                     </DialogContent>
                 )}
             </Dialog>
         </CardContent>
       </Card>
-      
-      {/* Hidden component for printing */}
-      <div className="hidden">
-        {selectedEvaluator && (
-          <PrintableView
-            ref={printRef}
-            evaluator={selectedEvaluator}
-            candidates={candidates}
-            items={items}
-            scores={scores}
-            comments={comments}
-          />
-        )}
-      </div>
     </div>
   );
 }
