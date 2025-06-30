@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -28,8 +29,7 @@ export default function CandidateManager() {
     setIsSaving(true);
     try {
       if (currentCandidate.id) {
-        const { id, ...data } = currentCandidate;
-        await updateCandidate(id, data as Omit<Candidate, 'id'>);
+        await updateCandidate(currentCandidate.id, { name: currentCandidate.name });
         toast({ title: "성공", description: "평가 대상자 정보가 수정되었습니다." });
       } else {
         await addCandidate(currentCandidate.name);

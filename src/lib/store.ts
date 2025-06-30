@@ -72,7 +72,7 @@ interface StoreActions {
   updateEvaluator: (id: string, updatedEvaluator: Omit<Evaluator, 'id'>) => Promise<void>;
   deleteEvaluator: (id: string) => Promise<void>;
   addCandidate: (name: string) => Promise<void>;
-  updateCandidate: (id: string, updatedCandidate: Omit<Candidate, 'id'>) => Promise<void>;
+  updateCandidate: (id: string, updatedCandidate: { name: string }) => Promise<void>;
   deleteCandidate: (id: string) => Promise<void>;
   addItem: (name: string, maxScore: number) => Promise<void>;
   updateItem: (id: string, updatedItem: Omit<EvaluationItem, 'id'>) => Promise<void>;
@@ -215,7 +215,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const updateEvaluator = useCallback(async (id: string, updated: Omit<Evaluator, 'id'>) => { await updateDoc(doc(db, 'evaluators', id), updated); }, []);
   const deleteEvaluator = useCallback(async (id: string) => { await deleteDoc(doc(db, 'evaluators', id)); }, []);
   const addCandidate = useCallback(async (name: string) => { await addDoc(collection(db, 'candidates'), { name, createdAt: Date.now() }); }, []);
-  const updateCandidate = useCallback(async (id: string, updated: Omit<Candidate, 'id'>) => { await updateDoc(doc(db, 'candidates', id), updated); }, []);
+  const updateCandidate = useCallback(async (id: string, updated: { name: string }) => { await updateDoc(doc(db, 'candidates', id), updated); }, []);
   const deleteCandidate = useCallback(async (id: string) => { await deleteDoc(doc(db, 'candidates', id)); }, []);
   const addItem = useCallback(async (name: string, maxScore: number) => { await addDoc(collection(db, 'items'), { name, maxScore }); }, []);
   const updateItem = useCallback(async (id: string, updated: Omit<EvaluationItem, 'id'>) => { await updateDoc(doc(db, 'items', id), updated); }, []);
@@ -246,7 +246,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     resetStore
   }), [state, addEvaluator, updateEvaluator, deleteEvaluator, addCandidate, updateCandidate, deleteCandidate, addItem, updateItem, deleteItem, addScore, addComment, setAdminPassword, resetAdminPassword, setSystemName, resetStore]);
 
-  return React.createElement(StoreContext.Provider, { value }, children);
+  return React.createElement(StoreContext.Provider, { value: value }, children);
 }
 
 // --- Custom Hook ---
