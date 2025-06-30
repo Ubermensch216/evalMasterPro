@@ -29,6 +29,7 @@ export interface Evaluator {
 export interface Candidate {
   id: string;
   name: string;
+  createdAt: number;
 }
 
 export interface EvaluationItem {
@@ -94,9 +95,9 @@ const createInitialState = (): Omit<StoreState, 'loading' | 'superPassword' | 'p
     { id: 'eval3', name: '박평가', password: '1' },
   ],
   candidates: [
-    { id: 'cand1', name: '최대상' },
-    { id: 'cand2', name: '강대상' },
-    { id: 'cand3', name: '조대상' },
+    { id: 'cand1', name: '최대상', createdAt: 1 },
+    { id: 'cand2', name: '강대상', createdAt: 2 },
+    { id: 'cand3', name: '조대상', createdAt: 3 },
   ],
   items: [
     { id: 'item1', name: '기술 이해도', maxScore: 20 },
@@ -143,7 +144,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const initialData = createInitialState();
     const seedBatch = writeBatch(db);
     initialData.evaluators.forEach(e => seedBatch.set(doc(db, 'evaluators', e.id), { name: e.name, password: e.password }));
-    initialData.candidates.forEach(c => seedBatch.set(doc(db, 'candidates', c.id), { name: c.name }));
+    initialData.candidates.forEach(c => seedBatch.set(doc(db, 'candidates', c.id), { name: c.name, createdAt: c.createdAt }));
     initialData.items.forEach(i => seedBatch.set(doc(db, 'items', i.id), { name: i.name, maxScore: i.maxScore }));
     await seedBatch.commit();
     
@@ -168,7 +169,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
     const unsubscribers = [
       onSnapshot(collection(db, 'evaluators'), (snapshot) => setState(prev => ({ ...prev, evaluators: mapSnapshot<Evaluator>(snapshot), permissionError: false })), handleError),
-      onSnapshot(collection(db, 'candidates'), (snapshot) => setState(prev => ({ ...prev, candidates: mapSnapshot<Candidate>(snapshot), permissionError: false })), handleError),
+      onSnapshot(collection(db, 'candidates'), (snapshot) => {
+        const fetchedCandidates = mapSnapshot<Candidate>(snapshot);
+        fetchedCandidates.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+        setState(prev => ({ ...prev, candidates: fetchedCandidates, permissionError: false }));
+      }, handleError),
       onSnapshot(collection(db, 'items'), (snapshot) => setState(prev => ({ ...prev, items: mapSnapshot<EvaluationItem>(snapshot), permissionError: false })), handleError),
       onSnapshot(collection(db, 'scores'), (snapshot) => setState(prev => ({ ...prev, scores: mapSnapshot<Score>(snapshot), permissionError: false })), handleError),
       onSnapshot(collection(db, 'comments'), (snapshot) => setState(prev => ({ ...prev, comments: mapSnapshot<Comment>(snapshot), permissionError: false })), handleError),
@@ -209,7 +214,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const addEvaluator = useCallback(async (name: string, password: string) => { await addDoc(collection(db, 'evaluators'), { name, password }); }, []);
   const updateEvaluator = useCallback(async (id: string, updated: Omit<Evaluator, 'id'>) => { await updateDoc(doc(db, 'evaluators', id), updated); }, []);
   const deleteEvaluator = useCallback(async (id: string) => { await deleteDoc(doc(db, 'evaluators', id)); }, []);
-  const addCandidate = useCallback(async (name: string) => { await addDoc(collection(db, 'candidates'), { name }); }, []);
+  const addCandidate = useCallback(async (name: string) => { await addDoc(collection(db, 'candidates'), { name, createdAt: Date.now() }); }, []);
   const updateCandidate = useCallback(async (id: string, updated: Omit<Candidate, 'id'>) => { await updateDoc(doc(db, 'candidates', id), updated); }, []);
   const deleteCandidate = useCallback(async (id: string) => { await deleteDoc(doc(db, 'candidates', id)); }, []);
   const addItem = useCallback(async (name: string, maxScore: number) => { await addDoc(collection(db, 'items'), { name, maxScore }); }, []);
