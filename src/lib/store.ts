@@ -16,7 +16,6 @@ import {
   setDoc,
   getDoc,
   DocumentData,
-  limit,
 } from 'firebase/firestore';
 
 // --- Type Definitions ---
@@ -77,8 +76,9 @@ interface StoreActions {
   addItem: (name: string, maxScore: number) => Promise<void>;
   updateItem: (id: string, updatedItem: Omit<EvaluationItem, 'id'>) => Promise<void>;
   deleteItem: (id: string) => Promise<void>;
-  addScore: (candidateId: string, evaluatorId: string, evaluationItemId: string, score: number) => Promise<void>;
-  addComment: (candidateId: string, evaluatorId: string, commentText: string) => Promise<void>;
+  saveScore: (candidateId: string, evaluatorId: string, evaluationItemId: string, score: number) => Promise<void>;
+  saveComment: (candidateId: string, evaluatorId: string, commentText: string) => Promise<void>;
+  deleteComment: (candidateId: string, evaluatorId: string) => Promise<void>;
   setAdminPassword: (password: string) => Promise<void>;
   resetAdminPassword: () => Promise<void>;
   setSystemName: (name: string) => Promise<void>;
@@ -169,7 +169,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
     const unsubscribers = [
       onSnapshot(collection(db, 'evaluators'), (snapshot) => setState(prev => ({ ...prev, evaluators: mapSnapshot<Evaluator>(snapshot), permissionError: false })), handleError),
-      onSnapshot(collection(db, 'candidates'), (snapshot) => {
+      onSnapshot(query(collection(db, 'candidates')), (snapshot) => {
         const fetchedCandidates = mapSnapshot<Candidate>(snapshot);
         fetchedCandidates.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
         setState(prev => ({ ...prev, candidates: fetchedCandidates, permissionError: false }));
@@ -215,13 +215,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const updateEvaluator = useCallback(async (id: string, updated: Omit<Evaluator, 'id'>) => { await updateDoc(doc(db, 'evaluators', id), updated); }, []);
   const deleteEvaluator = useCallback(async (id: string) => { await deleteDoc(doc(db, 'evaluators', id)); }, []);
   const addCandidate = useCallback(async (name: string) => { await addDoc(collection(db, 'candidates'), { name, createdAt: Date.now() }); }, []);
-  const updateCandidate = useCallback(async (id: string, updated: { name: string }) => { await updateDoc(doc(db, 'candidates', id), updated); }, []);
+  const updateCandidate = useCallback(async (id: string, updated: { name: string }) => { await updateDoc(doc(db, 'candidates', id), { name: updated.name }); }, []);
   const deleteCandidate = useCallback(async (id: string) => { await deleteDoc(doc(db, 'candidates', id)); }, []);
   const addItem = useCallback(async (name: string, maxScore: number) => { await addDoc(collection(db, 'items'), { name, maxScore }); }, []);
   const updateItem = useCallback(async (id: string, updated: Omit<EvaluationItem, 'id'>) => { await updateDoc(doc(db, 'items', id), updated); }, []);
   const deleteItem = useCallback(async (id: string) => { await deleteDoc(doc(db, 'items', id)); }, []);
-  const addScore = useCallback(async (candidateId: string, evaluatorId: string, evaluationItemId: string, score: number) => { await addDoc(collection(db, 'scores'), { candidateId, evaluatorId, evaluationItemId, score }); }, []);
-  const addComment = useCallback(async (candidateId: string, evaluatorId: string, commentText: string) => { await addDoc(collection(db, 'comments'), { candidateId, evaluatorId, commentText }); }, []);
+  const saveScore = useCallback(async (candidateId: string, evaluatorId: string, evaluationItemId: string, score: number) => {
+    const docId = `${candidateId}-${evaluatorId}-${evaluationItemId}`;
+    await setDoc(doc(db, 'scores', docId), { candidateId, evaluatorId, evaluationItemId, score });
+  }, []);
+  const saveComment = useCallback(async (candidateId: string, evaluatorId: string, commentText: string) => {
+      const docId = `${candidateId}-${evaluatorId}`;
+      await setDoc(doc(db, 'comments', docId), { candidateId, evaluatorId, commentText });
+  }, []);
+  const deleteComment = useCallback(async (candidateId: string, evaluatorId: string) => {
+      const docId = `${candidateId}-${evaluatorId}`;
+      await deleteDoc(doc(db, 'comments', docId));
+  }, []);
   const setAdminPassword = useCallback(async (password: string) => { await updateDoc(doc(db, 'settings', 'admin'), { password }); }, []);
   const resetAdminPassword = useCallback(async () => { await updateDoc(doc(db, 'settings', 'admin'), { password: "" }); }, []);
   const setSystemName = useCallback(async (name: string) => { await updateDoc(doc(db, 'settings', 'admin'), { systemName: name }); }, []);
@@ -238,13 +248,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     addItem,
     updateItem,
     deleteItem,
-    addScore,
-    addComment,
+    saveScore,
+    saveComment,
+    deleteComment,
     setAdminPassword,
     resetAdminPassword,
     setSystemName,
     resetStore
-  }), [state, addEvaluator, updateEvaluator, deleteEvaluator, addCandidate, updateCandidate, deleteCandidate, addItem, updateItem, deleteItem, addScore, addComment, setAdminPassword, resetAdminPassword, setSystemName, resetStore]);
+  }), [state, addEvaluator, updateEvaluator, deleteEvaluator, addCandidate, updateCandidate, deleteCandidate, addItem, updateItem, deleteItem, saveScore, saveComment, deleteComment, setAdminPassword, resetAdminPassword, setSystemName, resetStore]);
 
   return React.createElement(StoreContext.Provider, { value: value }, children);
 }

@@ -1,15 +1,15 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useStore, type Evaluator } from "@/lib/store";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { LogOut, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { LogOut, CheckCircle, AlertCircle, Loader2, Save } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -19,31 +19,15 @@ interface ScoringDashboardProps {
   onLogout: () => void;
 }
 
-type ScoresState = { [candidateId: string]: { [itemId: string]: number } };
-type CommentsState = { [candidateId: string]: string };
+type ScoresState = { [candidateId: string]: { [itemId: string]: number | undefined } };
+type CommentsState = { [candidateId: string]: string | undefined };
 
 export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboardProps) {
-  const { candidates, items, scores, comments, addScore, addComment, loading } = useStore();
+  const { candidates, items, scores, comments, saveScore, saveComment, deleteComment, loading } = useStore();
   const { toast } = useToast();
 
-  const getInitialScores = () => {
-    const initialState: ScoresState = {};
-    candidates.forEach(c => {
-      initialState[c.id] = {};
-    });
-    return initialState;
-  };
-
-  const getInitialComments = () => {
-    const initialState: CommentsState = {};
-    candidates.forEach(c => {
-      initialState[c.id] = "";
-    });
-    return initialState;
-  };
-
-  const [localScores, setLocalScores] = useState<ScoresState>(getInitialScores);
-  const [localComments, setLocalComments] = useState<CommentsState>(getInitialComments);
+  const [localScores, setLocalScores] = useState<ScoresState>({});
+  const [localComments, setLocalComments] = useState<CommentsState>({});
   const [isSubmitting, setIsSubmitting] = useState<string | null>(null);
 
   const hasEvaluatorScored = (candidateId: string) => {
@@ -59,10 +43,12 @@ export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboa
   }
 
   const handleScoreChange = (candidateId: string, itemId: string, value: string, maxScore: number) => {
-    let newScore = parseInt(value, 10);
-    if (isNaN(newScore)) newScore = 0;
-    if (newScore < 0) newScore = 0;
-    if (newScore > maxScore) newScore = maxScore;
+    let newScore: number | undefined = parseInt(value, 10);
+    if (isNaN(newScore)) newScore = undefined;
+    else {
+      if (newScore < 0) newScore = 0;
+      if (newScore > maxScore) newScore = maxScore;
+    }
     
     setLocalScores(prev => ({
       ...prev,
@@ -78,29 +64,38 @@ export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboa
   };
 
   const handleSubmit = async (candidateId: string) => {
-    const candidateScores = localScores[candidateId];
-    if (Object.keys(candidateScores).length !== items.length) {
-      toast({ title: "오류", description: "모든 항목을 채점해주세요.", variant: "destructive" });
-      return;
+    const scoresToSubmit: { [itemId: string]: number } = {};
+    for (const item of items) {
+        const score = localScores[candidateId]?.[item.id] ?? getStoredScore(candidateId, item.id);
+        if (typeof score !== 'number') {
+            toast({ title: "오류", description: `"${item.name}" 항목의 점수를 입력해주세요.`, variant: "destructive" });
+            return;
+        }
+        scoresToSubmit[item.id] = score;
     }
     
     setIsSubmitting(candidateId);
     try {
       const scorePromises = items.map(item => {
-        return addScore(candidateId, evaluator.id, item.id, candidateScores[item.id]);
+        return saveScore(candidateId, evaluator.id, item.id, scoresToSubmit[item.id]);
       });
       await Promise.all(scorePromises);
   
-      const comment = localComments[candidateId];
-      if (comment) {
-        await addComment(candidateId, evaluator.id, comment);
+      const commentToSave = localComments[candidateId] ?? getStoredComment(candidateId);
+      if (commentToSave) {
+        await saveComment(candidateId, evaluator.id, commentToSave);
+      } else if (getStoredComment(candidateId) !== undefined) {
+        await deleteComment(candidateId, evaluator.id);
       }
       
-      toast({ title: "성공", description: `${candidates.find(c=>c.id === candidateId)?.name} 님의 채점이 완료되었습니다.` });
+      toast({ title: "성공", description: `${candidates.find(c=>c.id === candidateId)?.name} 님의 채점 결과가 저장되었습니다.` });
+      
+      setLocalScores(prev => ({ ...prev, [candidateId]: undefined }));
+      setLocalComments(prev => ({...prev, [candidateId]: undefined}));
 
     } catch (error) {
-      console.error("Failed to submit score", error);
-      toast({ title: "오류", description: "채점 제출에 실패했습니다.", variant: "destructive" });
+      console.error("Failed to save scores", error);
+      toast({ title: "오류", description: "저장에 실패했습니다.", variant: "destructive" });
     } finally {
       setIsSubmitting(null);
     }
@@ -122,7 +117,7 @@ export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboa
       <Card>
         <CardHeader>
             <CardTitle>채점 대상자 목록</CardTitle>
-            <CardDescription>대상자를 선택하여 채점을 진행하세요. 완료된 채점은 수정할 수 없습니다.</CardDescription>
+            <CardDescription>대상자를 선택하여 채점을 진행하세요. 저장 후에도 언제든지 다시 수정할 수 있습니다.</CardDescription>
         </CardHeader>
         <CardContent>
             {loading ? (
@@ -137,12 +132,12 @@ export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboa
                       const isScored = hasEvaluatorScored(candidate.id);
                       const isSaving = isSubmitting === candidate.id;
                       return (
-                          <AccordionItem value={candidate.id} key={candidate.id} disabled={isScored || isSaving}>
-                              <AccordionTrigger className={`${isScored ? "text-muted-foreground" : ""}`}>
+                          <AccordionItem value={candidate.id} key={candidate.id} disabled={isSaving}>
+                              <AccordionTrigger>
                                   <div className="flex items-center gap-2">
                                       {isScored ? <CheckCircle className="h-5 w-5 text-green-500"/> : <AlertCircle className="h-5 w-5 text-yellow-500"/>}
                                       {candidate.name}
-                                      {isScored && <span className="text-sm font-normal ml-2">(채점 완료)</span>}
+                                      {isScored && <span className="text-sm font-normal ml-2">(저장됨)</span>}
                                   </div>
                               </AccordionTrigger>
                               <AccordionContent>
@@ -154,11 +149,10 @@ export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboa
                                           <Input 
                                               id={`${candidate.id}-${item.id}`}
                                               type="number"
-                                              value={isScored ? getStoredScore(candidate.id, item.id) : localScores[candidate.id]?.[item.id] ?? ''}
+                                              value={localScores[candidate.id]?.[item.id] ?? getStoredScore(candidate.id, item.id) ?? ''}
                                               onChange={(e) => handleScoreChange(candidate.id, item.id, e.target.value, item.maxScore)}
                                               max={item.maxScore}
                                               min={0}
-                                              disabled={isScored}
                                               className="w-28"
                                           />
                                           <p className="text-sm text-muted-foreground whitespace-nowrap">/ {item.maxScore}점</p>
@@ -169,37 +163,35 @@ export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboa
                                       <Label htmlFor={`comment-${candidate.id}`}>기타 의견 (최대 300자)</Label>
                                       <Textarea 
                                         id={`comment-${candidate.id}`}
-                                        value={isScored ? getStoredComment(candidate.id) : localComments[candidate.id] || ''}
+                                        value={localComments[candidate.id] ?? getStoredComment(candidate.id) ?? ''}
                                         onChange={(e) => handleCommentChange(candidate.id, e.target.value)}
                                         maxLength={300}
-                                        disabled={isScored}
                                         className="min-h-[100px]"
                                       />
                                   </div>
-                                  {!isScored && (
-                                      <div className="flex justify-end">
-                                          <AlertDialog>
-                                              <AlertDialogTrigger asChild>
-                                                  <Button disabled={isSaving}>
-                                                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                                    채점 완료
-                                                  </Button>
-                                              </AlertDialogTrigger>
-                                              <AlertDialogContent>
-                                                  <AlertDialogHeader>
-                                                      <AlertDialogTitle>채점을 완료하시겠습니까?</AlertDialogTitle>
-                                                      <AlertDialogDescription>
-                                                          '채점 완료'를 누르면 더 이상 수정할 수 없습니다. 제출하시겠습니까?
-                                                      </AlertDialogDescription>
-                                                  </AlertDialogHeader>
-                                                  <AlertDialogFooter>
-                                                      <AlertDialogCancel>취소</AlertDialogCancel>
-                                                      <AlertDialogAction onClick={() => handleSubmit(candidate.id)}>채점 완료</AlertDialogAction>
-                                                  </AlertDialogFooter>
-                                              </AlertDialogContent>
-                                          </AlertDialog>
-                                      </div>
-                                  )}
+                                  <div className="flex justify-end">
+                                      <AlertDialog>
+                                          <AlertDialogTrigger asChild>
+                                              <Button disabled={isSaving}>
+                                                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                <Save className="mr-2 h-4 w-4" />
+                                                저장하기
+                                              </Button>
+                                          </AlertDialogTrigger>
+                                          <AlertDialogContent>
+                                              <AlertDialogHeader>
+                                                  <AlertDialogTitle>채점 결과를 저장하시겠습니까?</AlertDialogTitle>
+                                                  <AlertDialogDescription>
+                                                      저장 후에도 언제든지 다시 수정할 수 있습니다.
+                                                  </AlertDialogDescription>
+                                              </AlertDialogHeader>
+                                              <AlertDialogFooter>
+                                                  <AlertDialogCancel>취소</AlertDialogCancel>
+                                                  <AlertDialogAction onClick={() => handleSubmit(candidate.id)}>저장하기</AlertDialogAction>
+                                              </AlertDialogFooter>
+                                          </AlertDialogContent>
+                                      </AlertDialog>
+                                  </div>
                                 </div>
                               </AccordionContent>
                           </AccordionItem>
