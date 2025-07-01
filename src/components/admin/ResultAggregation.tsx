@@ -49,13 +49,13 @@ export default function ResultAggregation() {
           /* Basic print setup */
           @media print {
             @page {
-              size: A4 landscape; /* Use landscape for wider tables */
-              margin: 1.5cm;
+              size: A4 portrait;
+              margin: 1.2cm;
             }
 
             html, body {
               font-family: 'PT Sans', sans-serif;
-              font-size: 10pt;
+              font-size: 9pt;
               background: white !important;
               color: black !important;
               -webkit-print-color-adjust: exact;
@@ -88,9 +88,10 @@ export default function ResultAggregation() {
           }
           .report-table th, .report-table td {
              border: 1px solid #ddd !important;
-             padding: 0.75rem !important;
+             padding: 0.5rem !important;
              vertical-align: middle !important;
              text-align: center;
+             word-break: break-word;
           }
           .report-table th:first-child, .report-table td:first-child,
           .report-table th:last-child, .report-table td:last-child {
