@@ -16,6 +16,7 @@ import {
   setDoc,
   getDoc,
   DocumentData,
+  where,
 } from 'firebase/firestore';
 
 // --- Type Definitions ---
@@ -220,10 +221,29 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const addItem = useCallback(async (name: string, maxScore: number) => { await addDoc(collection(db, 'items'), { name, maxScore }); }, []);
   const updateItem = useCallback(async (id: string, updated: Omit<EvaluationItem, 'id'>) => { await updateDoc(doc(db, 'items', id), updated); }, []);
   const deleteItem = useCallback(async (id: string) => { await deleteDoc(doc(db, 'items', id)); }, []);
+  
   const saveScore = useCallback(async (candidateId: string, evaluatorId: string, evaluationItemId: string, score: number) => {
-    const docId = `${candidateId}-${evaluatorId}-${evaluationItemId}`;
-    await setDoc(doc(db, 'scores', docId), { candidateId, evaluatorId, evaluationItemId, score });
+    const scoresRef = collection(db, 'scores');
+    const q = query(scoresRef, 
+      where('candidateId', '==', candidateId),
+      where('evaluatorId', '==', evaluatorId),
+      where('evaluationItemId', '==', evaluationItemId)
+    );
+    
+    const batch = writeBatch(db);
+    const querySnapshot = await getDocs(q);
+    
+    querySnapshot.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+    
+    const newDocId = `${candidateId}-${evaluatorId}-${evaluationItemId}`;
+    const newDocRef = doc(db, 'scores', newDocId);
+    batch.set(newDocRef, { candidateId, evaluatorId, evaluationItemId, score });
+    
+    await batch.commit();
   }, []);
+
   const saveComment = useCallback(async (candidateId: string, evaluatorId: string, commentText: string) => {
       const docId = `${candidateId}-${evaluatorId}`;
       await setDoc(doc(db, 'comments', docId), { candidateId, evaluatorId, commentText });
