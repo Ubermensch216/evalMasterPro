@@ -44,7 +44,7 @@ export default function ResultsTable({ showDetails = false }: ResultsTableProps)
       };
     });
 
-    const sortedResults = [...candidateScores].sort((a, b) => b.totalScore - a.totalScore);
+    const sortedResults = [...candidateScores].sort((a, b) => b.averageScore - a.averageScore);
 
     return sortedResults.map((res, index) => ({
       ...res,
