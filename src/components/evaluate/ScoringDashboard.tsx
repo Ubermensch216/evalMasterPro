@@ -9,7 +9,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { LogOut, CheckCircle, AlertCircle, Loader2, Save } from "lucide-react";
+import { LogOut, CheckCircle, AlertCircle, Loader2, Save, Lock } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,7 +23,7 @@ type ScoresState = { [candidateId: string]: { [itemId: string]: number | undefin
 type CommentsState = { [candidateId: string]: string | undefined };
 
 export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboardProps) {
-  const { candidates, items, scores, comments, saveScore, saveComment, deleteComment, loading } = useStore();
+  const { candidates, items, scores, comments, saveScore, saveComment, deleteComment, loading, allowScoreModification } = useStore();
   const { toast } = useToast();
 
   const [localScores, setLocalScores] = useState<ScoresState>({});
@@ -76,8 +76,8 @@ export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboa
     
     setIsSubmitting(candidateId);
     try {
-      const scorePromises = items.map(item => {
-        return saveScore(candidateId, evaluator.id, item.id, scoresToSubmit[item.id]);
+      const scorePromises = Object.entries(scoresToSubmit).map(([itemId, score]) => {
+        return saveScore(candidateId, evaluator.id, itemId, score);
       });
       await Promise.all(scorePromises);
   
@@ -117,7 +117,7 @@ export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboa
       <Card>
         <CardHeader>
             <CardTitle>채점 대상자 목록</CardTitle>
-            <CardDescription>대상자를 선택하여 채점을 진행하세요. 저장 후에도 언제든지 다시 수정할 수 있습니다.</CardDescription>
+            <CardDescription>{allowScoreModification ? "대상자를 선택하여 채점을 진행하세요. 저장 후에도 언제든지 다시 수정할 수 있습니다." : "대상자를 선택하여 채점을 진행하세요. 저장 후에는 수정이 불가능하니 신중하게 평가해주세요."}</CardDescription>
         </CardHeader>
         <CardContent>
             {loading ? (
@@ -131,13 +131,14 @@ export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboa
                   {candidates.map(candidate => {
                       const isScored = hasEvaluatorScored(candidate.id);
                       const isSaving = isSubmitting === candidate.id;
+                      const isLocked = !allowScoreModification && isScored;
                       return (
-                          <AccordionItem value={candidate.id} key={candidate.id} disabled={isSaving}>
+                          <AccordionItem value={candidate.id} key={candidate.id} disabled={isSaving || isLocked}>
                               <AccordionTrigger>
                                   <div className="flex items-center gap-2">
-                                      {isScored ? <CheckCircle className="h-5 w-5 text-green-500"/> : <AlertCircle className="h-5 w-5 text-yellow-500"/>}
+                                      {isLocked ? <Lock className="h-5 w-5 text-destructive"/> : (isScored ? <CheckCircle className="h-5 w-5 text-green-500"/> : <AlertCircle className="h-5 w-5 text-yellow-500"/>)}
                                       {candidate.name}
-                                      {isScored && <span className="text-sm font-normal ml-2">(저장됨)</span>}
+                                      {isScored && <span className="text-sm font-normal ml-2">({isLocked ? '수정 불가' : '저장됨'})</span>}
                                   </div>
                               </AccordionTrigger>
                               <AccordionContent>
@@ -154,6 +155,7 @@ export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboa
                                               max={item.maxScore}
                                               min={0}
                                               className="w-28"
+                                              disabled={isLocked}
                                           />
                                           <p className="text-sm text-muted-foreground whitespace-nowrap">/ {item.maxScore}점</p>
                                         </div>
@@ -167,12 +169,13 @@ export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboa
                                         onChange={(e) => handleCommentChange(candidate.id, e.target.value)}
                                         maxLength={300}
                                         className="min-h-[100px]"
+                                        disabled={isLocked}
                                       />
                                   </div>
                                   <div className="flex justify-end">
                                       <AlertDialog>
                                           <AlertDialogTrigger asChild>
-                                              <Button disabled={isSaving}>
+                                              <Button disabled={isSaving || isLocked}>
                                                 {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                                 <Save className="mr-2 h-4 w-4" />
                                                 저장하기
@@ -182,7 +185,7 @@ export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboa
                                               <AlertDialogHeader>
                                                   <AlertDialogTitle>채점 결과를 저장하시겠습니까?</AlertDialogTitle>
                                                   <AlertDialogDescription>
-                                                      저장 후에도 언제든지 다시 수정할 수 있습니다.
+                                                      {allowScoreModification ? "저장 후에도 언제든지 다시 수정할 수 있습니다." : "저장 후에는 수정할 수 없습니다. 계속하시겠습니까?"}
                                                   </AlertDialogDescription>
                                               </AlertDialogHeader>
                                               <AlertDialogFooter>

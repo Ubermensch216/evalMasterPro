@@ -8,12 +8,22 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { RotateCw, KeyRound, Loader2, Save, Eraser, ShieldCheck, ShieldAlert } from "lucide-react";
+import { RotateCw, KeyRound, Loader2, Save, Eraser, ShieldCheck, ShieldAlert, ShieldLock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Switch } from "@/components/ui/switch";
 
 export default function SettingsPanel() {
-  const { systemName, adminPassword, setSystemName, setAdminPassword, resetAdminPassword, resetStore } = useStore();
+  const { 
+    systemName, 
+    adminPassword, 
+    allowScoreModification,
+    setSystemName, 
+    setAdminPassword, 
+    resetAdminPassword, 
+    resetStore,
+    setAllowScoreModification
+  } = useStore();
   
   const [systemNameInput, setSystemNameInput] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -23,6 +33,7 @@ export default function SettingsPanel() {
   const [isSavingPassword, setIsSavingPassword] = useState(false);
   const [isResetingPassword, setIsResetingPassword] = useState(false);
   const [isResetingSystem, setIsResetingSystem] = useState(false);
+  const [isSavingModification, setIsSavingModification] = useState(false);
 
   const { toast } = useToast();
 
@@ -93,6 +104,20 @@ export default function SettingsPanel() {
       setIsResetingSystem(false);
     }
   };
+
+  const handleToggleScoreModification = async (allow: boolean) => {
+    setIsSavingModification(true);
+    try {
+      await setAllowScoreModification(allow);
+      toast({ title: "성공", description: `채점 수정 권한이 ${allow ? '허용' : '차단'}되었습니다.` });
+    } catch (error) {
+      console.error("Failed to save modification setting:", error);
+      toast({ title: "오류", description: "설정 변경에 실패했습니다.", variant: "destructive" });
+    } finally {
+      setIsSavingModification(false);
+    }
+  };
+
 
   return (
     <div className="grid gap-6 md:grid-cols-2">
@@ -173,6 +198,33 @@ export default function SettingsPanel() {
           </AlertDialog>
         </CardFooter>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center"><ShieldLock className="mr-2 h-5 w-5" />채점 수정 권한</CardTitle>
+          <CardDescription>평가위원이 제출 완료 후 점수를 수정할 수 있는지 여부를 설정합니다.</CardDescription>
+        </CardHeader>
+        <CardContent>
+           <div className="flex items-center justify-between rounded-lg border p-4">
+            <div className="space-y-0.5">
+              <Label htmlFor="allow-modification-switch" className="text-base">
+                제출 후 수정 허용
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                이 기능이 꺼지면, 채점 완료 후에는 점수를 수정할 수 없습니다.
+              </p>
+            </div>
+            <Switch
+              id="allow-modification-switch"
+              checked={allowScoreModification}
+              onCheckedChange={handleToggleScoreModification}
+              disabled={isSavingModification}
+              aria-label="채점 수정 허용 토글"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
 
       <Card className="border-destructive md:col-span-2">
         <CardHeader>
