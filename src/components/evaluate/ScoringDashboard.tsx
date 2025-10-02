@@ -92,10 +92,6 @@ export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboa
       
       toast({ title: "성공", description: `${candidates.find(c=>c.id === candidateId)?.name} 님의 채점 결과가 저장되었습니다.` });
       
-      // Keep local state for further edits
-      // setLocalScores(prev => ({ ...prev, [candidateId]: undefined }));
-      // setLocalComments(prev => ({...prev, [candidateId]: undefined}));
-
     } catch (error) {
       console.error("Failed to save scores", error);
       toast({ title: "오류", description: "저장에 실패했습니다.", variant: "destructive" });
@@ -107,7 +103,7 @@ export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboa
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
             <h1 className="text-3xl font-bold text-primary">채점 페이지</h1>
             <p className="text-muted-foreground">{evaluator.name} 위원님, 환영합니다.</p>
@@ -137,7 +133,7 @@ export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboa
                       const isLocked = !allowScoreModification && isScored;
                       return (
                           <AccordionItem value={candidate.id} key={candidate.id} disabled={isSaving}>
-                              <AccordionTrigger disabled={isLocked}>
+                              <AccordionTrigger disabled={isLocked} className="text-lg">
                                   <div className="flex items-center gap-2">
                                       {isLocked ? <Lock className="h-5 w-5 text-destructive"/> : (isScored ? <CheckCircle className="h-5 w-5 text-green-500"/> : <AlertCircle className="h-5 w-5 text-yellow-500"/>)}
                                       {candidate.name}
@@ -145,13 +141,13 @@ export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboa
                                   </div>
                               </AccordionTrigger>
                               <AccordionContent>
-                                <div className="space-y-8 p-4 border rounded-md">
+                                <div className="space-y-8 p-2 md:p-4 border rounded-md">
                                   {items.map(item => {
                                     const currentScore = localScores[candidate.id]?.[item.id] ?? getStoredScore(candidate.id, item.id) ?? 0;
                                     return (
                                       <div key={item.id} className="grid grid-cols-1 gap-3">
-                                          <Label htmlFor={`${candidate.id}-${item.id}`}>{item.name} <span className="text-muted-foreground">({item.maxScore}점)</span></Label>
-                                          <div className="grid grid-cols-[1fr_auto] items-center gap-4">
+                                          <Label htmlFor={`${candidate.id}-${item.id}`} className="text-base">{item.name} <span className="text-muted-foreground">({item.maxScore}점)</span></Label>
+                                          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] items-center gap-4">
                                             <Slider
                                                 id={`${candidate.id}-${item.id}-slider`}
                                                 value={[currentScore]}
@@ -167,7 +163,7 @@ export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboa
                                                 onChange={(e) => handleScoreChange(candidate.id, item.id, parseInt(e.target.value, 10), item.maxScore)}
                                                 max={item.maxScore}
                                                 min={0}
-                                                className="w-20"
+                                                className="w-full md:w-24 text-center text-lg"
                                                 disabled={isLocked}
                                             />
                                           </div>
@@ -175,7 +171,7 @@ export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboa
                                     )
                                   })}
                                   <div className="space-y-2">
-                                      <Label htmlFor={`comment-${candidate.id}`}>기타 의견 (최대 300자)</Label>
+                                      <Label htmlFor={`comment-${candidate.id}`} className="text-base">기타 의견 (최대 300자)</Label>
                                       <Textarea 
                                         id={`comment-${candidate.id}`}
                                         value={localComments[candidate.id] ?? getStoredComment(candidate.id) ?? ''}
@@ -185,29 +181,31 @@ export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboa
                                         disabled={isLocked}
                                       />
                                   </div>
-                                  <div className="flex justify-end">
-                                      <AlertDialog>
-                                          <AlertDialogTrigger asChild>
-                                              <Button disabled={isSaving || isLocked}>
-                                                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                                <Save className="mr-2 h-4 w-4" />
-                                                저장하기
-                                              </Button>
-                                          </AlertDialogTrigger>
-                                          <AlertDialogContent>
-                                              <AlertDialogHeader>
-                                                  <AlertDialogTitle>채점 결과를 저장하시겠습니까?</AlertDialogTitle>
-                                                  <AlertDialogDescription>
-                                                      {allowScoreModification ? "저장 후에도 언제든지 다시 수정할 수 있습니다." : "저장 후에는 수정할 수 없습니다. 계속하시겠습니까?"}
-                                                  </AlertDialogDescription>
-                                              </AlertDialogHeader>
-                                              <AlertDialogFooter>
-                                                  <AlertDialogCancel>취소</AlertDialogCancel>
-                                                  <AlertDialogAction onClick={() => handleSubmit(candidate.id)}>저장하기</AlertDialogAction>
-                                              </AlertDialogFooter>
-                                          </AlertDialogContent>
-                                      </AlertDialog>
-                                  </div>
+                                  {!isLocked && (
+                                    <div className="flex justify-end">
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button disabled={isSaving}>
+                                                  {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                  <Save className="mr-2 h-4 w-4" />
+                                                  저장하기
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>채점 결과를 저장하시겠습니까?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        {allowScoreModification ? "저장 후에도 언제든지 다시 수정할 수 있습니다." : "저장 후에는 수정할 수 없습니다. 계속하시겠습니까?"}
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>취소</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleSubmit(candidate.id)}>저장하기</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </div>
+                                  )}
                                 </div>
                               </AccordionContent>
                           </AccordionItem>
@@ -220,5 +218,3 @@ export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboa
     </div>
   );
 }
-
-    
