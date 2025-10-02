@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useStore, type Evaluator } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
@@ -13,6 +13,7 @@ import { LogOut, CheckCircle, AlertCircle, Loader2, Save, Lock } from "lucide-re
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Slider } from "@/components/ui/slider";
 
 interface ScoringDashboardProps {
   evaluator: Evaluator;
@@ -42,10 +43,11 @@ export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboa
       return comments.find(c => c.evaluatorId === evaluator.id && c.candidateId === candidateId)?.commentText;
   }
 
-  const handleScoreChange = (candidateId: string, itemId: string, value: string, maxScore: number) => {
-    let newScore: number | undefined = parseInt(value, 10);
-    if (isNaN(newScore)) newScore = undefined;
-    else {
+  const handleScoreChange = (candidateId: string, itemId: string, value: number, maxScore: number) => {
+    let newScore: number | undefined = value;
+    if (isNaN(newScore)) {
+      newScore = undefined;
+    } else {
       if (newScore < 0) newScore = 0;
       if (newScore > maxScore) newScore = maxScore;
     }
@@ -90,8 +92,9 @@ export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboa
       
       toast({ title: "성공", description: `${candidates.find(c=>c.id === candidateId)?.name} 님의 채점 결과가 저장되었습니다.` });
       
-      setLocalScores(prev => ({ ...prev, [candidateId]: undefined }));
-      setLocalComments(prev => ({...prev, [candidateId]: undefined}));
+      // Keep local state for further edits
+      // setLocalScores(prev => ({ ...prev, [candidateId]: undefined }));
+      // setLocalComments(prev => ({...prev, [candidateId]: undefined}));
 
     } catch (error) {
       console.error("Failed to save scores", error);
@@ -133,8 +136,8 @@ export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboa
                       const isSaving = isSubmitting === candidate.id;
                       const isLocked = !allowScoreModification && isScored;
                       return (
-                          <AccordionItem value={candidate.id} key={candidate.id} disabled={isSaving || isLocked}>
-                              <AccordionTrigger>
+                          <AccordionItem value={candidate.id} key={candidate.id} disabled={isSaving}>
+                              <AccordionTrigger disabled={isLocked}>
                                   <div className="flex items-center gap-2">
                                       {isLocked ? <Lock className="h-5 w-5 text-destructive"/> : (isScored ? <CheckCircle className="h-5 w-5 text-green-500"/> : <AlertCircle className="h-5 w-5 text-yellow-500"/>)}
                                       {candidate.name}
@@ -142,25 +145,35 @@ export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboa
                                   </div>
                               </AccordionTrigger>
                               <AccordionContent>
-                                <div className="space-y-6 p-4 border rounded-md">
-                                  {items.map(item => (
-                                    <div key={item.id} className="grid grid-cols-1 sm:grid-cols-[1fr_auto] sm:items-center gap-2">
-                                        <Label htmlFor={`${candidate.id}-${item.id}`}>{item.name}</Label>
-                                        <div className="flex items-center gap-2 justify-self-start sm:justify-self-end">
-                                          <Input 
-                                              id={`${candidate.id}-${item.id}`}
-                                              type="number"
-                                              value={localScores[candidate.id]?.[item.id] ?? getStoredScore(candidate.id, item.id) ?? ''}
-                                              onChange={(e) => handleScoreChange(candidate.id, item.id, e.target.value, item.maxScore)}
-                                              max={item.maxScore}
-                                              min={0}
-                                              className="w-28"
-                                              disabled={isLocked}
-                                          />
-                                          <p className="text-sm text-muted-foreground whitespace-nowrap">/ {item.maxScore}점</p>
-                                        </div>
-                                    </div>
-                                  ))}
+                                <div className="space-y-8 p-4 border rounded-md">
+                                  {items.map(item => {
+                                    const currentScore = localScores[candidate.id]?.[item.id] ?? getStoredScore(candidate.id, item.id) ?? 0;
+                                    return (
+                                      <div key={item.id} className="grid grid-cols-1 gap-3">
+                                          <Label htmlFor={`${candidate.id}-${item.id}`}>{item.name} <span className="text-muted-foreground">({item.maxScore}점)</span></Label>
+                                          <div className="grid grid-cols-[1fr_auto] items-center gap-4">
+                                            <Slider
+                                                id={`${candidate.id}-${item.id}-slider`}
+                                                value={[currentScore]}
+                                                onValueChange={(value) => handleScoreChange(candidate.id, item.id, value[0], item.maxScore)}
+                                                max={item.maxScore}
+                                                step={1}
+                                                disabled={isLocked}
+                                            />
+                                            <Input 
+                                                id={`${candidate.id}-${item.id}`}
+                                                type="number"
+                                                value={currentScore}
+                                                onChange={(e) => handleScoreChange(candidate.id, item.id, parseInt(e.target.value, 10), item.maxScore)}
+                                                max={item.maxScore}
+                                                min={0}
+                                                className="w-20"
+                                                disabled={isLocked}
+                                            />
+                                          </div>
+                                      </div>
+                                    )
+                                  })}
                                   <div className="space-y-2">
                                       <Label htmlFor={`comment-${candidate.id}`}>기타 의견 (최대 300자)</Label>
                                       <Textarea 
@@ -207,3 +220,5 @@ export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboa
     </div>
   );
 }
+
+    
