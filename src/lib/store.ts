@@ -64,6 +64,7 @@ interface StoreState {
   scores: Score[];
   comments: Comment[];
   adminPassword: string;
+  resultsPassword: string;
   superPassword: "0132";
   allowScoreModification: boolean;
 }
@@ -83,6 +84,8 @@ interface StoreActions {
   deleteComment: (candidateId: string, evaluatorId: string) => Promise<void>;
   setAdminPassword: (password: string) => Promise<void>;
   resetAdminPassword: () => Promise<void>;
+  setResultsPassword: (password: string) => Promise<void>;
+  resetResultsPassword: () => Promise<void>;
   setSystemName: (name: string) => Promise<void>;
   resetStore: () => Promise<void>;
   setAllowScoreModification: (allow: boolean) => Promise<void>;
@@ -111,6 +114,7 @@ const createInitialState = (): Omit<StoreState, 'loading' | 'superPassword' | 'p
   scores: [],
   comments: [],
   adminPassword: '1',
+  resultsPassword: '1',
   systemName: '이발마스터 프로(EvalMaster Pro)',
   allowScoreModification: true,
 });
@@ -130,6 +134,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     scores: [],
     comments: [],
     adminPassword: '',
+    resultsPassword: '',
     superPassword: "0132",
     allowScoreModification: true,
   });
@@ -155,6 +160,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     
     await setDoc(doc(db, 'settings', 'admin'), { 
       password: initialData.adminPassword, 
+      resultsPassword: initialData.resultsPassword,
       systemName: initialData.systemName,
       allowScoreModification: initialData.allowScoreModification
     });
@@ -192,6 +198,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           setState(prev => ({
             ...prev, 
             adminPassword: data.password,
+            resultsPassword: data.resultsPassword,
             systemName: data.systemName || '이발마스터 프로(EvalMaster Pro)',
             allowScoreModification: data.allowScoreModification !== false, // Default to true
             permissionError: false
@@ -262,6 +269,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
   const setAdminPassword = useCallback(async (password: string) => { await updateDoc(doc(db, 'settings', 'admin'), { password }); }, []);
   const resetAdminPassword = useCallback(async () => { await updateDoc(doc(db, 'settings', 'admin'), { password: "" }); }, []);
+  const setResultsPassword = useCallback(async (password: string) => { await updateDoc(doc(db, 'settings', 'admin'), { resultsPassword: password }); }, []);
+  const resetResultsPassword = useCallback(async () => { await updateDoc(doc(db, 'settings', 'admin'), { resultsPassword: "" }); }, []);
   const setSystemName = useCallback(async (name: string) => { await updateDoc(doc(db, 'settings', 'admin'), { systemName: name }); }, []);
   const setAllowScoreModification = useCallback(async (allow: boolean) => { await updateDoc(doc(db, 'settings', 'admin'), { allowScoreModification: allow }); }, []);
 
@@ -282,10 +291,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     deleteComment,
     setAdminPassword,
     resetAdminPassword,
+    setResultsPassword,
+    resetResultsPassword,
     setSystemName,
     resetStore,
     setAllowScoreModification
-  }), [state, addEvaluator, updateEvaluator, deleteEvaluator, addCandidate, updateCandidate, deleteCandidate, addItem, updateItem, deleteItem, saveScore, saveComment, deleteComment, setAdminPassword, resetAdminPassword, setSystemName, resetStore, setAllowScoreModification]);
+  }), [state, addEvaluator, updateEvaluator, deleteEvaluator, addCandidate, updateCandidate, deleteCandidate, addItem, updateItem, deleteItem, saveScore, saveComment, deleteComment, setAdminPassword, resetAdminPassword, setResultsPassword, resetResultsPassword, setSystemName, resetStore, setAllowScoreModification]);
 
   return React.createElement(StoreContext.Provider, { value: value }, children);
 }

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -8,10 +9,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ResultsPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const { adminPassword, superPassword, loading } = useStore();
+  const { resultsPassword, superPassword, loading } = useStore();
 
   const handleLogin = (password: string) => {
-    if (password === superPassword || (adminPassword && password === adminPassword)) {
+    if (password === superPassword || (resultsPassword && password === resultsPassword)) {
       setIsAuthenticated(true);
       return true;
     }
