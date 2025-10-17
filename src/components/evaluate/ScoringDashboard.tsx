@@ -32,7 +32,6 @@ export default function ScoringDashboard({ evaluator: initialEvaluator, onLogout
   const [isSubmitting, setIsSubmitting] = useState<string | null>(null);
   const [isCompleting, setIsCompleting] = useState(false);
   
-  // Find the most up-to-date evaluator information from the store
   const evaluator = useMemo(() => evaluators.find(e => e.id === initialEvaluator.id) ?? initialEvaluator, [evaluators, initialEvaluator]);
 
 
@@ -45,7 +44,7 @@ export default function ScoringDashboard({ evaluator: initialEvaluator, onLogout
   }
   
   const getStoredComment = (candidateId: string) => {
-      return comments.find(c => c.evaluatorId === evaluator.id && c.candidateId === candidateId)?.commentText;
+      return comments.find(c => c.evaluatorId === evaluator.id && s.candidateId === candidateId)?.commentText;
   }
 
   const handleScoreChange = (candidateId: string, itemId: string, value: number, maxScore: number) => {
@@ -181,10 +180,8 @@ export default function ScoringDashboard({ evaluator: initialEvaluator, onLogout
                                                 id={`${candidate.id}-${item.id}`}
                                                 type="number"
                                                 value={currentScore}
-                                                onChange={(e) => handleScoreChange(candidate.id, item.id, parseInt(e.target.value, 10), item.maxScore)}
-                                                max={item.maxScore}
-                                                min={0}
-                                                className="w-full md:w-24 text-center text-lg"
+                                                readOnly
+                                                className="w-full md:w-24 text-center text-lg bg-muted focus-visible:ring-0 focus-visible:ring-offset-0 pointer-events-none"
                                                 disabled={isLocked}
                                             />
                                           </div>
@@ -266,3 +263,5 @@ export default function ScoringDashboard({ evaluator: initialEvaluator, onLogout
     </div>
   );
 }
+
+    
