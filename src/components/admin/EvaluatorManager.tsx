@@ -142,19 +142,25 @@ export default function EvaluatorManager() {
               <TableRow key={evaluator.id}>
                 <TableCell className="font-medium">{evaluator.name}</TableCell>
                 <TableCell className="text-center">
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Switch
-                                checked={evaluator.scoringLocked}
-                                onCheckedChange={(checked) => handleLockToggle(evaluator.id, checked)}
-                                aria-label="채점 잠금 토글"
-                                className="data-[state=checked]:bg-destructive data-[state=unchecked]:bg-primary"
-                            />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>{evaluator.scoringLocked ? '클릭하여 채점 잠금을 해제합니다.' : '클릭하여 채점을 잠급니다.'}</p>
-                        </TooltipContent>
-                    </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="relative inline-flex items-center group">
+                        <Switch
+                          id={`lock-${evaluator.id}`}
+                          checked={evaluator.scoringLocked}
+                          onCheckedChange={(checked) => handleLockToggle(evaluator.id, checked)}
+                          aria-label="채점 잠금 토글"
+                          className="peer data-[state=checked]:bg-destructive data-[state=unchecked]:bg-primary"
+                        />
+                         <span className="absolute right-1.5 text-xs font-bold text-white opacity-0 transition-opacity peer-data-[state=checked]:opacity-100">
+                          ON
+                        </span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{evaluator.scoringLocked ? '클릭하여 채점 잠금을 해제합니다.' : '클릭하여 채점을 잠급니다.'}</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </TableCell>
                 <TableCell className="text-right">
                   <Button variant="ghost" size="icon" onClick={() => openEditDialog(evaluator)}>
@@ -189,3 +195,4 @@ export default function EvaluatorManager() {
     </Card>
   );
 }
+
