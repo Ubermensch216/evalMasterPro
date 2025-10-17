@@ -149,7 +149,7 @@ export default function SettingsPanel() {
     setIsSavingModification(true);
     try {
       await setAllowScoreModification(allow);
-      toast({ title: "성공", description: `채점 수정 권한이 ${allow ? '허용' : '차단'}되었습니다.` });
+      toast({ title: "성공", description: `전체 평가위원의 채점 상태가 일괄적으로 ${allow ? '해제(수정 가능)' : '잠금(수정 불가)'} 상태로 변경되었습니다.` });
     } catch (error) {
       console.error("Failed to save modification setting:", error);
       toast({ title: "오류", description: "설정 변경에 실패했습니다.", variant: "destructive" });
@@ -301,26 +301,47 @@ export default function SettingsPanel() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center"><Lock className="mr-2 h-5 w-5" />채점 수정 권한</CardTitle>
-          <CardDescription>평가위원이 제출 완료 후 점수를 수정할 수 있는지 여부를 설정합니다.</CardDescription>
+          <CardDescription>전체 평가위원의 채점 가능 상태를 일괄적으로 제어합니다.</CardDescription>
         </CardHeader>
         <CardContent>
-           <div className="flex items-center justify-between rounded-lg border p-4">
-            <div className="space-y-0.5">
-              <Label htmlFor="allow-modification-switch" className="text-base">
-                제출 후 수정 허용
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                이 기능이 꺼지면, 채점 완료 후에는 점수를 수정할 수 없습니다.
-              </p>
-            </div>
-            <Switch
-              id="allow-modification-switch"
-              checked={allowScoreModification}
-              onCheckedChange={handleToggleScoreModification}
-              disabled={isSavingModification}
-              aria-label="채점 수정 허용 토글"
-            />
-          </div>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <div className="flex items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="allow-modification-switch" className="text-base">
+                      수정 권한 활성화
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      {allowScoreModification ? "현재 활성화됨. 클릭하여 모든 평가위원의 채점을 잠급니다." : "현재 비활성화됨. 클릭하여 모든 평가위원의 채점을 해제합니다."}
+                    </p>
+                  </div>
+                  <Switch
+                    id="allow-modification-switch"
+                    checked={allowScoreModification}
+                    disabled={isSavingModification}
+                    aria-label="채점 수정 허용 토글"
+                  />
+                </div>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>정말 변경하시겠습니까?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {allowScoreModification 
+                      ? "이 작업을 수행하면 모든 평가위원의 채점이 즉시 '잠금' 상태로 변경되어 더 이상 수정할 수 없게 됩니다."
+                      : "이 작업을 수행하면 모든 평가위원의 채점이 즉시 '해제' 상태로 변경되어 다시 수정할 수 있게 됩니다."
+                    }
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={isSavingModification}>취소</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => handleToggleScoreModification(!allowScoreModification)} disabled={isSavingModification}>
+                    {isSavingModification && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isSavingModification ? "변경 중..." : "확인"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
         </CardContent>
       </Card>
 

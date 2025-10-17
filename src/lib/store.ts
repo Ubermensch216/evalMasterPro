@@ -274,7 +274,24 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const setResultsPassword = useCallback(async (password: string) => { await updateDoc(doc(db, 'settings', 'admin'), { resultsPassword: password }); }, []);
   const resetResultsPassword = useCallback(async () => { await updateDoc(doc(db, 'settings', 'admin'), { resultsPassword: "" }); }, []);
   const setSystemName = useCallback(async (name: string) => { await updateDoc(doc(db, 'settings', 'admin'), { systemName: name }); }, []);
-  const setAllowScoreModification = useCallback(async (allow: boolean) => { await updateDoc(doc(db, 'settings', 'admin'), { allowScoreModification: allow }); }, []);
+
+  const setAllowScoreModification = useCallback(async (allow: boolean) => {
+    const batch = writeBatch(db);
+    
+    // 1. Update the global setting
+    const settingsRef = doc(db, 'settings', 'admin');
+    batch.update(settingsRef, { allowScoreModification: allow });
+    
+    // 2. Update all evaluators' scoringLocked status
+    const evaluatorsRef = collection(db, 'evaluators');
+    const evaluatorsSnapshot = await getDocs(evaluatorsRef);
+    evaluatorsSnapshot.forEach((evaluatorDoc) => {
+      batch.update(evaluatorDoc.ref, { scoringLocked: !allow });
+    });
+    
+    await batch.commit();
+  }, []);
+
   const setEvaluatorScoringLock = useCallback(async (evaluatorId: string, locked: boolean) => { await updateDoc(doc(db, 'evaluators', evaluatorId), { scoringLocked: locked }); }, []);
 
 
