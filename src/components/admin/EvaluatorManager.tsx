@@ -143,7 +143,7 @@ export default function EvaluatorManager() {
                 <TableCell className="font-medium">{evaluator.name}</TableCell>
                 <TableCell className="text-center">
                     <Tooltip>
-                        <TooltipTrigger>
+                        <TooltipTrigger asChild>
                             <Switch
                                 checked={evaluator.scoringLocked}
                                 onCheckedChange={(checked) => handleLockToggle(evaluator.id, checked)}
