@@ -148,7 +148,7 @@ export default function EvaluatorManager() {
                                 checked={evaluator.scoringLocked}
                                 onCheckedChange={(checked) => handleLockToggle(evaluator.id, checked)}
                                 aria-label="채점 잠금 토글"
-                                className="data-[state=checked]:bg-destructive data-[state=unchecked]:bg-green-600"
+                                className="data-[state=checked]:bg-destructive data-[state=unchecked]:bg-primary"
                             />
                         </TooltipTrigger>
                         <TooltipContent>
