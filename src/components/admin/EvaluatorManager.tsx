@@ -32,8 +32,8 @@ export default function EvaluatorManager() {
     setIsSaving(true);
     try {
       if (currentEvaluator.id) {
-        const { id, scoringLocked, ...data } = currentEvaluator;
-        await updateEvaluator(id, data as Omit<Evaluator, 'id' | 'scoringLocked'>);
+        const { id, scoringLocked, createdAt, ...data } = currentEvaluator;
+        await updateEvaluator(id, data as Omit<Evaluator, 'id' | 'scoringLocked' | 'createdAt'>);
         toast({ title: "성공", description: "평가 위원 정보가 수정되었습니다." });
       } else {
         await addEvaluator(currentEvaluator.name, currentEvaluator.password);
