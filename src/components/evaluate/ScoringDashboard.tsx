@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useStore, type Evaluator } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
@@ -23,14 +23,18 @@ interface ScoringDashboardProps {
 type ScoresState = { [candidateId: string]: { [itemId: string]: number | undefined } };
 type CommentsState = { [candidateId: string]: string | undefined };
 
-export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboardProps) {
-  const { candidates, items, scores, comments, saveScore, saveComment, deleteComment, loading, allowScoreModification, setEvaluatorScoringLock } = useStore();
+export default function ScoringDashboard({ evaluator: initialEvaluator, onLogout }: ScoringDashboardProps) {
+  const { evaluators, candidates, items, scores, comments, saveScore, saveComment, deleteComment, loading, allowScoreModification, setEvaluatorScoringLock } = useStore();
   const { toast } = useToast();
 
   const [localScores, setLocalScores] = useState<ScoresState>({});
   const [localComments, setLocalComments] = useState<CommentsState>({});
   const [isSubmitting, setIsSubmitting] = useState<string | null>(null);
   const [isCompleting, setIsCompleting] = useState(false);
+  
+  // Find the most up-to-date evaluator information from the store
+  const evaluator = useMemo(() => evaluators.find(e => e.id === initialEvaluator.id) ?? initialEvaluator, [evaluators, initialEvaluator]);
+
 
   const hasEvaluatorScored = (candidateId: string) => {
     return scores.some(s => s.evaluatorId === evaluator.id && s.candidateId === candidateId);
