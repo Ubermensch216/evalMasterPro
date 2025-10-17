@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -9,11 +10,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PlusCircle, Edit, Trash2, Loader2 } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Loader2, Lock, Unlock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
 
 export default function EvaluatorManager() {
-  const { evaluators, addEvaluator, updateEvaluator, deleteEvaluator } = useStore();
+  const { evaluators, addEvaluator, updateEvaluator, deleteEvaluator, setEvaluatorScoringLock } = useStore();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [currentEvaluator, setCurrentEvaluator] = useState<Partial<Evaluator>>({});
@@ -28,8 +32,8 @@ export default function EvaluatorManager() {
     setIsSaving(true);
     try {
       if (currentEvaluator.id) {
-        const { id, ...data } = currentEvaluator;
-        await updateEvaluator(id, data as Omit<Evaluator, 'id'>);
+        const { id, scoringLocked, ...data } = currentEvaluator;
+        await updateEvaluator(id, data as Omit<Evaluator, 'id' | 'scoringLocked'>);
         toast({ title: "성공", description: "평가 위원 정보가 수정되었습니다." });
       } else {
         await addEvaluator(currentEvaluator.name, currentEvaluator.password);
@@ -65,13 +69,23 @@ export default function EvaluatorManager() {
     }
   }
 
+  const handleLockToggle = async (evaluatorId: string, locked: boolean) => {
+    try {
+        await setEvaluatorScoringLock(evaluatorId, locked);
+        toast({ title: "성공", description: `채점 상태가 ${locked ? '잠금' : '해제'}되었습니다.` });
+    } catch (error) {
+        console.error("Failed to toggle lock:", error);
+        toast({ title: "오류", description: "상태 변경에 실패했습니다.", variant: "destructive" });
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>평가 위원 관리</CardTitle>
-            <CardDescription>평가 위원을 추가, 수정, 삭제하고 비밀번호를 관리합니다.</CardDescription>
+            <CardDescription>평가 위원을 추가, 수정, 삭제하고 채점 완료 상태를 관리합니다.</CardDescription>
           </div>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
@@ -114,10 +128,12 @@ export default function EvaluatorManager() {
         </div>
       </CardHeader>
       <CardContent>
+        <TooltipProvider>
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>이름</TableHead>
+              <TableHead className="text-center">채점 잠금</TableHead>
               <TableHead className="text-right">작업</TableHead>
             </TableRow>
           </TableHeader>
@@ -125,6 +141,21 @@ export default function EvaluatorManager() {
             {evaluators.map((evaluator) => (
               <TableRow key={evaluator.id}>
                 <TableCell className="font-medium">{evaluator.name}</TableCell>
+                <TableCell className="text-center">
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <Switch
+                                checked={evaluator.scoringLocked}
+                                onCheckedChange={(checked) => handleLockToggle(evaluator.id, checked)}
+                                aria-label="채점 잠금 토글"
+                                className="data-[state=checked]:bg-destructive"
+                            />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>{evaluator.scoringLocked ? '클릭하여 채점 잠금을 해제합니다.' : '클릭하여 채점을 잠급니다.'}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TableCell>
                 <TableCell className="text-right">
                   <Button variant="ghost" size="icon" onClick={() => openEditDialog(evaluator)}>
                     <Edit className="h-4 w-4" />
@@ -153,6 +184,7 @@ export default function EvaluatorManager() {
             ))}
           </TableBody>
         </Table>
+        </TooltipProvider>
       </CardContent>
     </Card>
   );

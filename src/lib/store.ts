@@ -24,6 +24,7 @@ export interface Evaluator {
   id: string;
   name: string;
   password: string;
+  scoringLocked: boolean;
 }
 
 export interface Candidate {
@@ -71,7 +72,7 @@ interface StoreState {
 
 interface StoreActions {
   addEvaluator: (name: string, password: string) => Promise<void>;
-  updateEvaluator: (id: string, updatedEvaluator: Omit<Evaluator, 'id'>) => Promise<void>;
+  updateEvaluator: (id: string, updatedEvaluator: Omit<Evaluator, 'id' | 'scoringLocked'>) => Promise<void>;
   deleteEvaluator: (id: string) => Promise<void>;
   addCandidate: (name: string) => Promise<void>;
   updateCandidate: (id: string, updatedCandidate: { name: string }) => Promise<void>;
@@ -89,6 +90,7 @@ interface StoreActions {
   setSystemName: (name: string) => Promise<void>;
   resetStore: () => Promise<void>;
   setAllowScoreModification: (allow: boolean) => Promise<void>;
+  setEvaluatorScoringLock: (evaluatorId: string, locked: boolean) => Promise<void>;
 }
 
 type StoreContextType = StoreState & StoreActions;
@@ -96,9 +98,9 @@ type StoreContextType = StoreState & StoreActions;
 // --- Initial Data for Seeding ---
 const createInitialState = (): Omit<StoreState, 'loading' | 'superPassword' | 'permissionError'> => ({
   evaluators: [
-    { id: 'eval1', name: '김평가', password: '1' },
-    { id: 'eval2', name: '이평가', password: '1' },
-    { id: 'eval3', name: '박평가', password: '1' },
+    { id: 'eval1', name: '김평가', password: '1', scoringLocked: false },
+    { id: 'eval2', name: '이평가', password: '1', scoringLocked: false },
+    { id: 'eval3', name: '박평가', password: '1', scoringLocked: false },
   ],
   candidates: [
     { id: 'cand1', name: '최대상', createdAt: 1 },
@@ -153,7 +155,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
     const initialData = createInitialState();
     const seedBatch = writeBatch(db);
-    initialData.evaluators.forEach(e => seedBatch.set(doc(db, 'evaluators', e.id), { name: e.name, password: e.password }));
+    initialData.evaluators.forEach(e => seedBatch.set(doc(db, 'evaluators', e.id), { name: e.name, password: e.password, scoringLocked: e.scoringLocked }));
     initialData.candidates.forEach(c => seedBatch.set(doc(db, 'candidates', c.id), { name: c.name, createdAt: c.createdAt }));
     initialData.items.forEach(i => seedBatch.set(doc(db, 'items', i.id), { name: i.name, maxScore: i.maxScore }));
     await seedBatch.commit();
@@ -228,8 +230,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [resetStore]);
 
 
-  const addEvaluator = useCallback(async (name: string, password: string) => { await addDoc(collection(db, 'evaluators'), { name, password }); }, []);
-  const updateEvaluator = useCallback(async (id: string, updated: Omit<Evaluator, 'id'>) => { await updateDoc(doc(db, 'evaluators', id), updated); }, []);
+  const addEvaluator = useCallback(async (name: string, password: string) => { await addDoc(collection(db, 'evaluators'), { name, password, scoringLocked: false }); }, []);
+  const updateEvaluator = useCallback(async (id: string, updated: Omit<Evaluator, 'id'| 'scoringLocked'>) => { await updateDoc(doc(db, 'evaluators', id), updated); }, []);
   const deleteEvaluator = useCallback(async (id: string) => { await deleteDoc(doc(db, 'evaluators', id)); }, []);
   const addCandidate = useCallback(async (name: string) => { await addDoc(collection(db, 'candidates'), { name, createdAt: Date.now() }); }, []);
   const updateCandidate = useCallback(async (id: string, updated: { name: string }) => { await updateDoc(doc(db, 'candidates', id), { name: updated.name }); }, []);
@@ -253,7 +255,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       batch.delete(doc.ref);
     });
     
-    const newDocRef = doc(collection(db, 'scores')); // Let Firestore generate ID
+    const newDocRef = doc(collection(db, 'scores'));
     batch.set(newDocRef, { candidateId, evaluatorId, evaluationItemId, score });
     
     await batch.commit();
@@ -273,6 +275,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const resetResultsPassword = useCallback(async () => { await updateDoc(doc(db, 'settings', 'admin'), { resultsPassword: "" }); }, []);
   const setSystemName = useCallback(async (name: string) => { await updateDoc(doc(db, 'settings', 'admin'), { systemName: name }); }, []);
   const setAllowScoreModification = useCallback(async (allow: boolean) => { await updateDoc(doc(db, 'settings', 'admin'), { allowScoreModification: allow }); }, []);
+  const setEvaluatorScoringLock = useCallback(async (evaluatorId: string, locked: boolean) => { await updateDoc(doc(db, 'evaluators', evaluatorId), { scoringLocked: locked }); }, []);
 
 
   const value = useMemo(() => ({
@@ -295,8 +298,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     resetResultsPassword,
     setSystemName,
     resetStore,
-    setAllowScoreModification
-  }), [state, addEvaluator, updateEvaluator, deleteEvaluator, addCandidate, updateCandidate, deleteCandidate, addItem, updateItem, deleteItem, saveScore, saveComment, deleteComment, setAdminPassword, resetAdminPassword, setResultsPassword, resetResultsPassword, setSystemName, resetStore, setAllowScoreModification]);
+    setAllowScoreModification,
+    setEvaluatorScoringLock,
+  }), [state, addEvaluator, updateEvaluator, deleteEvaluator, addCandidate, updateCandidate, deleteCandidate, addItem, updateItem, deleteItem, saveScore, saveComment, deleteComment, setAdminPassword, resetAdminPassword, setResultsPassword, resetResultsPassword, setSystemName, resetStore, setAllowScoreModification, setEvaluatorScoringLock]);
 
   return React.createElement(StoreContext.Provider, { value: value }, children);
 }

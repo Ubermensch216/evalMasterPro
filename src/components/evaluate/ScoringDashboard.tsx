@@ -4,12 +4,12 @@
 import { useState } from "react";
 import { useStore, type Evaluator } from "@/lib/store";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { LogOut, CheckCircle, AlertCircle, Loader2, Save, Lock } from "lucide-react";
+import { LogOut, CheckCircle, AlertCircle, Loader2, Save, Lock, ShieldCheck } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,12 +24,13 @@ type ScoresState = { [candidateId: string]: { [itemId: string]: number | undefin
 type CommentsState = { [candidateId: string]: string | undefined };
 
 export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboardProps) {
-  const { candidates, items, scores, comments, saveScore, saveComment, deleteComment, loading, allowScoreModification } = useStore();
+  const { candidates, items, scores, comments, saveScore, saveComment, deleteComment, loading, allowScoreModification, setEvaluatorScoringLock } = useStore();
   const { toast } = useToast();
 
   const [localScores, setLocalScores] = useState<ScoresState>({});
   const [localComments, setLocalComments] = useState<CommentsState>({});
   const [isSubmitting, setIsSubmitting] = useState<string | null>(null);
+  const [isCompleting, setIsCompleting] = useState(false);
 
   const hasEvaluatorScored = (candidateId: string) => {
     return scores.some(s => s.evaluatorId === evaluator.id && s.candidateId === candidateId);
@@ -100,6 +101,22 @@ export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboa
     }
   };
 
+  const handleFinalSubmit = async () => {
+    setIsCompleting(true);
+    try {
+        await setEvaluatorScoringLock(evaluator.id, true);
+        toast({
+            title: "평가 완료",
+            description: "모든 채점 결과가 최종 제출되었습니다. 더 이상 수정할 수 없습니다."
+        });
+    } catch (error) {
+        console.error("Failed to lock scoring:", error);
+        toast({ title: "오류", description: "최종 제출 처리에 실패했습니다.", variant: "destructive" });
+    } finally {
+        setIsCompleting(false);
+    }
+  };
+
 
   return (
     <div className="space-y-6">
@@ -116,7 +133,7 @@ export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboa
       <Card>
         <CardHeader>
             <CardTitle>채점 대상자 목록</CardTitle>
-            <CardDescription>{allowScoreModification ? "대상자를 선택하여 채점을 진행하세요. 저장 후에도 언제든지 다시 수정할 수 있습니다." : "대상자를 선택하여 채점을 진행하세요. 저장 후에는 수정이 불가능하니 신중하게 평가해주세요."}</CardDescription>
+            <CardDescription>{allowScoreModification && !evaluator.scoringLocked ? "대상자를 선택하여 채점을 진행하세요. 저장 후에도 수정할 수 있습니다. 모든 평가 완료 후 하단의 '최종 평가 완료' 버튼을 눌러주세요." : "채점이 잠겨있습니다. 점수 확인만 가능합니다."}</CardDescription>
         </CardHeader>
         <CardContent>
             {loading ? (
@@ -130,10 +147,10 @@ export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboa
                   {candidates.map(candidate => {
                       const isScored = hasEvaluatorScored(candidate.id);
                       const isSaving = isSubmitting === candidate.id;
-                      const isLocked = !allowScoreModification && isScored;
+                      const isLocked = evaluator.scoringLocked || (!allowScoreModification && isScored);
                       return (
                           <AccordionItem value={candidate.id} key={candidate.id} disabled={isSaving}>
-                              <AccordionTrigger disabled={isLocked} className="text-lg">
+                              <AccordionTrigger disabled={isLocked && !evaluator.scoringLocked} className="text-lg">
                                   <div className="flex items-center gap-2">
                                       {isLocked ? <Lock className="h-5 w-5 text-destructive"/> : (isScored ? <CheckCircle className="h-5 w-5 text-green-500"/> : <AlertCircle className="h-5 w-5 text-yellow-500"/>)}
                                       {candidate.name}
@@ -195,7 +212,7 @@ export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboa
                                                 <AlertDialogHeader>
                                                     <AlertDialogTitle>채점 결과를 저장하시겠습니까?</AlertDialogTitle>
                                                     <AlertDialogDescription>
-                                                        {allowScoreModification ? "저장 후에도 언제든지 다시 수정할 수 있습니다." : "저장 후에는 수정할 수 없습니다. 계속하시겠습니까?"}
+                                                        {allowScoreModification ? "저장 후에도 최종 평가 완료 전까지 수정할 수 있습니다." : "저장 후에는 수정할 수 없습니다. 계속하시겠습니까?"}
                                                     </AlertDialogDescription>
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
@@ -214,6 +231,33 @@ export default function ScoringDashboard({ evaluator, onLogout }: ScoringDashboa
               </Accordion>
             )}
         </CardContent>
+        {!evaluator.scoringLocked && (
+             <CardFooter className="border-t px-6 py-4">
+                 <div className="w-full flex justify-end">
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive" disabled={isCompleting}>
+                                {isCompleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                <ShieldCheck className="mr-2 h-4 w-4" />
+                                최종 평가 완료
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>정말 최종 제출하시겠습니까?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    이 작업을 수행하면 모든 채점 내용이 잠기며 더 이상 수정할 수 없습니다. 관리자만 이 잠금을 해제할 수 있습니다.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>취소</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleFinalSubmit} className="bg-destructive hover:bg-destructive/90">최종 제출</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                 </div>
+             </CardFooter>
+        )}
       </Card>
     </div>
   );
