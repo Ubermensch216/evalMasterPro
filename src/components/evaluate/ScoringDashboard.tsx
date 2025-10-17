@@ -9,11 +9,13 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { LogOut, CheckCircle, AlertCircle, Loader2, Save, Lock, ShieldCheck } from "lucide-react";
+import { LogOut, CheckCircle, AlertCircle, Loader2, Save, Lock, ShieldCheck, FileText } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
+import { ScoringSummaryView } from "./ScoringSummaryView";
 
 interface ScoringDashboardProps {
   evaluator: Evaluator;
@@ -24,7 +26,7 @@ type ScoresState = { [candidateId: string]: { [itemId: string]: number | undefin
 type CommentsState = { [candidateId: string]: string | undefined };
 
 export default function ScoringDashboard({ evaluator: initialEvaluator, onLogout }: ScoringDashboardProps) {
-  const { evaluators, candidates, items, scores, comments, saveScore, saveComment, deleteComment, loading, allowScoreModification, setEvaluatorScoringLock } = useStore();
+  const { systemName, evaluators, candidates, items, scores, comments, saveScore, saveComment, deleteComment, loading, allowScoreModification, setEvaluatorScoringLock } = useStore();
   const { toast } = useToast();
 
   const [localScores, setLocalScores] = useState<ScoresState>({});
@@ -234,7 +236,28 @@ export default function ScoringDashboard({ evaluator: initialEvaluator, onLogout
         </CardContent>
         {!evaluator.scoringLocked && (
              <CardFooter className="border-t px-6 py-4">
-                 <div className="w-full flex justify-end">
+                 <div className="w-full flex justify-end items-center gap-2">
+                     <Dialog>
+                        <DialogTrigger asChild>
+                            <Button variant="outline">
+                                <FileText className="mr-2 h-4 w-4" />
+                                채점 내역 확인
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                            <DialogHeader>
+                                <DialogTitle>{evaluator.name} 위원 채점 내역</DialogTitle>
+                            </DialogHeader>
+                            <ScoringSummaryView 
+                                evaluator={evaluator}
+                                candidates={candidates}
+                                items={items}
+                                scores={scores}
+                                comments={comments}
+                                systemName={systemName}
+                            />
+                        </DialogContent>
+                     </Dialog>
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button variant="destructive" disabled={isCompleting}>
@@ -263,5 +286,3 @@ export default function ScoringDashboard({ evaluator: initialEvaluator, onLogout
     </div>
   );
 }
-
-    
