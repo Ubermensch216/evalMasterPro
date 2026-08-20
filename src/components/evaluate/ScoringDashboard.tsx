@@ -46,7 +46,7 @@ export default function ScoringDashboard({ evaluator: initialEvaluator, onLogout
   }
   
   const getStoredComment = (candidateId: string) => {
-      return comments.find(c => c.evaluatorId === evaluator.id && s.candidateId === candidateId)?.commentText;
+      return comments.find(c => c.evaluatorId === evaluator.id && c.candidateId === candidateId)?.commentText;
   }
 
   const handleScoreChange = (candidateId: string, itemId: string, value: number, maxScore: number) => {
