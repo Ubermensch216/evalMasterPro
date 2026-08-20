@@ -4,6 +4,9 @@
 
 EvalMaster Pro는 각종 공모전, 해커톤, 제안서 심사, 채용 면접, 인사 평가 등에서 여러 명의 평가위원이 실시간으로 대상자를 채점하고, 관리자가 이를 종합하여 순위와 통계를 즉시 산출할 수 있는 전문 평가 솔루션입니다.
 
+![alt text](evalMasterPro(screenshot).png)
+![alt text](localhost_9002_evaluate.png)
+![alt text](<스크린샷 2026-08-20 134033.png>)
 ---
 
 ## 🌟 주요 핵심 기능
