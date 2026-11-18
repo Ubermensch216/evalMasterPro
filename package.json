@@ -9,7 +9,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test src/lib/__tests__/*.test.ts",
+    "package": "node scripts/package.mjs --demo",
+    "package:firebase": "node scripts/package.mjs"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.8.0",

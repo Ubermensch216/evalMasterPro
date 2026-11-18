@@ -1,6 +1,6 @@
 # Build Project Workflow
 
-This workflow compiles and builds the EvalMaster Pro Next.js project for production.
+This workflow verifies, tests, compiles, and builds the EvalMaster Pro Next.js project for production.
 
 ## Prerequisites
 - Node.js >= 20.x
@@ -19,7 +19,12 @@ This workflow compiles and builds the EvalMaster Pro Next.js project for product
    npm run typecheck
    ```
 
-3. Build production bundle:
+3. Run unit tests:
+   ```bash
+   npm test
+   ```
+
+4. Build production bundle:
    ```bash
    npm run build
    ```

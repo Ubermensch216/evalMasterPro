@@ -1,13 +1,13 @@
-
 "use client";
 
-import { useMemo } from "react";
-import { useStore } from "@/lib/store";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Eye } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useMemo } from 'react';
+import { useStore } from '@/lib/store';
+import { calculateCandidateResults } from '@/lib/evaluation';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Eye } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface ResultsTableProps {
   showDetails?: boolean;
@@ -18,40 +18,9 @@ export default function ResultsTable({ showDetails = false }: ResultsTableProps)
 
   const results = useMemo(() => {
     if (loading) return [];
+    return calculateCandidateResults({ candidates, evaluators, items, scores });
+  }, [candidates, evaluators, items, scores, loading]);
 
-    const candidateScores = candidates.map(candidate => {
-      const candidateId = candidate.id;
-      const relatedScores = scores.filter(s => s.candidateId === candidateId);
-      const totalScore = relatedScores.reduce((acc, s) => acc + s.score, 0);
-      const numEvaluatorsWhoScored = new Set(relatedScores.map(s => s.evaluatorId)).size;
-      const averageScore = numEvaluatorsWhoScored > 0 ? totalScore / numEvaluatorsWhoScored : 0;
-      
-      const scoreByEvaluator = evaluators.map(evaluator => {
-          const evaluatorScores = relatedScores.filter(s => s.evaluatorId === evaluator.id);
-          const total = evaluatorScores.reduce((sum, s) => sum + s.score, 0);
-          return {
-              evaluatorName: evaluator.name,
-              total,
-          }
-      });
-
-      return {
-        id: candidate.id,
-        name: candidate.name,
-        totalScore,
-        averageScore,
-        scoreByEvaluator,
-      };
-    });
-
-    const sortedResults = [...candidateScores].sort((a, b) => b.averageScore - a.averageScore);
-
-    return sortedResults.map((res, index) => ({
-      ...res,
-      rank: index + 1,
-    }));
-  }, [candidates, scores, evaluators, loading]);
-  
   if (loading) {
     return (
       <div className="border rounded-lg p-4 space-y-2">
@@ -66,7 +35,7 @@ export default function ResultsTable({ showDetails = false }: ResultsTableProps)
   if (candidates.length === 0) {
     return <p className="text-center text-muted-foreground py-8">아직 등록된 평가 대상자가 없습니다.</p>;
   }
-  
+
   if (scores.length === 0) {
     return <p className="text-center text-muted-foreground py-8">아직 채점 결과가 없습니다.</p>;
   }
@@ -94,28 +63,32 @@ export default function ResultsTable({ showDetails = false }: ResultsTableProps)
                 <TableCell className="text-center">
                   <Dialog>
                     <DialogTrigger asChild>
-                       <Button variant="outline" size="icon"><Eye className="h-4 w-4" /></Button>
+                      <Button variant="outline" size="icon" aria-label={`${result.name} 평가위원별 점수 보기`}>
+                        <Eye className="h-4 w-4" />
+                      </Button>
                     </DialogTrigger>
                     <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>{result.name} - 평가위원별 점수</DialogTitle>
-                        </DialogHeader>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>평가위원</TableHead>
-                                    <TableHead className="text-right">점수</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {result.scoreByEvaluator.map(score => (
-                                    <TableRow key={score.evaluatorName}>
-                                        <TableCell>{score.evaluatorName}</TableCell>
-                                        <TableCell className="text-right">{score.total > 0 ? score.total : '미채점'}</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                      <DialogHeader>
+                        <DialogTitle>{result.name} - 평가위원별 점수</DialogTitle>
+                      </DialogHeader>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>평가위원</TableHead>
+                            <TableHead className="text-right">점수</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {result.scoreByEvaluator.map((entry) => (
+                            <TableRow key={entry.evaluatorId}>
+                              <TableCell>{entry.evaluatorName}</TableCell>
+                              <TableCell className="text-right">
+                                {entry.hasScored ? entry.total : '미채점'}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
                     </DialogContent>
                   </Dialog>
                 </TableCell>

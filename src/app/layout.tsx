@@ -4,6 +4,7 @@ import { StoreProvider } from "@/lib/store";
 import { Toaster } from "@/components/ui/toaster";
 import { PageHeader } from "@/components/common/PageHeader";
 import PermissionErrorDisplay from "@/components/common/PermissionErrorDisplay";
+import DemoModeBanner from "@/components/common/DemoModeBanner";
 
 export const metadata: Metadata = {
   title: "이발마스터 프로(EvalMaster Pro)",
@@ -26,6 +27,7 @@ export default function RootLayout({
         <StoreProvider>
           <div className="flex min-h-screen w-full flex-col">
             <PageHeader />
+            <DemoModeBanner />
             <PermissionErrorDisplay />
             <main className="flex-1">
               {children}

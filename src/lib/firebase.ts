@@ -1,5 +1,5 @@
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app';
+import { getFirestore, type Firestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -10,8 +10,21 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Firebase 초기화
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const db = getFirestore(app);
+const isDemoForced = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+
+export const isFirebaseConfigured =
+  !isDemoForced &&
+  Boolean(firebaseConfig.apiKey) &&
+  firebaseConfig.apiKey !== 'YOUR_API_KEY' &&
+  Boolean(firebaseConfig.projectId) &&
+  firebaseConfig.projectId !== 'YOUR_PROJECT_ID';
+
+let app: FirebaseApp | null = null;
+let db: Firestore | null = null;
+
+if (isFirebaseConfigured) {
+  app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+  db = getFirestore(app);
+}
 
 export { app, db };
